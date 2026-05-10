@@ -1,90 +1,214 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SGCA Partners - Specialized Sectors. Medical Cybersecurity and Explosion-Proof Systems.">
-    <title>Specialized Sectors | SGCA Partners</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="SGCA Partners - 전문 분야. 첨단 사이버보안 및 방폭 기기 시스템.">
+    <title>전문 분야 | SGCA Partners</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <header class="navbar">
         <div class="container">
             <a href="index.html" class="logo">
-                SGCA<span class="logo-accent">Partners</span>
+                <img src="images/logo.svg" alt="SGCA Partners" height="70">
             </a>
             <nav>
                 <ul class="nav-links">
-                    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                    <li class="nav-item"><a href="management-system.html" class="nav-link">Management System</a></li>
-                    <li class="nav-item"><a href="product-certification.html" class="nav-link">Product Certification</a></li>
-                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link active">Specialized Sectors</a></li>
-                    <li class="nav-item"><a href="insights.html" class="nav-link">Insights</a></li>
+
+                    <li class="nav-item">
+                        <a href="management-system.html" class="nav-link">경영시스템 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="management-system.html#iso9001" class="dropdown-link">ISO 9001 (품질)</a>
+                            <a href="management-system.html#iso14001" class="dropdown-link">ISO 14001 (환경)</a>
+                            <a href="management-system.html#iso45001" class="dropdown-link">ISO 45001 (안전보건)</a>
+                            <a href="management-system.html#iso13485" class="dropdown-link">ISO 13485 (의료기기)</a>
+                            <a href="management-system.html#iso19443" class="dropdown-link">ISO 19443 (원자력)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="product-certification.html" class="nav-link">제품 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="product-certification.html#nrtl" class="dropdown-link">NRTL (북미)</a>
+                            <a href="product-certification.html#ce" class="dropdown-link">CE marking (유럽)</a>
+                            <a href="product-certification.html#kc" class="dropdown-link">KC 인증 (한국)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link active">전문 분야</a></li>
+                    <li class="nav-item"><a href="insights.html" class="nav-link">인사이트</a></li>
                 </ul>
             </nav>
+            <div class="language-selector">
+                <button class="lang-btn active">KR</button> | 
+                <button class="lang-btn">EN</button>
+            </div>
         </div>
     </header>
 
     <section class="page-header">
         <div class="container">
-            <h1>Specialized Sectors</h1>
-            <p>Advanced Compliance for Extreme Environments and Cybersecurity</p>
+            <h1>전문 분야</h1>
+            <p>극한 환경 및 사이버보안을 위한 첨단 규제 준수 솔루션</p>
         </div>
     </section>
 
-    <section id="cybersecurity" class="section section-light">
-        <div class="container">
-            <div class="section-header">
-                <h2>Advanced Cybersecurity</h2>
-                <p>Ensuring resilience against evolving digital threats in critical infrastructure and medical technology.</p>
+    <!-- 1. 의료기기 사이버보안 -->
+    <section id="med-cybersec" class="section section-light">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">의료기기 사이버보안 <span class="cert-name">(FDA & EU MDR)</span></h2>
+                <p class="cert-slogan">"디지털 헬스케어 시대, 글로벌 시장이 요구하는 강력한 보안 가이드"</p>
             </div>
-            <div class="services-grid">
-                <div class="service-card">
-                    <h3>EU Cyber Resilience Act (CRA)</h3>
-                    <p>Preparing manufacturers for mandatory cybersecurity requirements for hardware and software products with digital elements.</p>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>최근 FDA(미국)와 MDR(유럽)은 의료기기의 환자 안전을 위해 사이버보안 요건을 의무화했습니다. SGCA Partners는 설계 단계부터 사후 관리까지 통합 보안 솔루션을 제공합니다.</p>
                 </div>
-                <div class="service-card">
-                    <h3>Radio Equipment Directive (RED)</h3>
-                    <p>Compliance for internet-connected radio equipment, ensuring network protection and data privacy.</p>
-                </div>
-                <div class="service-card">
-                    <h3>Medical & Machinery Cybersecurity</h3>
-                    <p>Addressing IEC 81001-5-1, FDA Premarket/Postmarket cybersecurity guidance, and the new Machinery Regulation cyber mandates.</p>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>FDA Premarket Submission</strong>
+                            <span>사이버보안 관련 기술 문서(PMA/510k) 작성 및 보안 위험 관리.</span>
+                        </li>
+                        <li>
+                            <strong>EU MDR GSPR 대응</strong>
+                            <span>부속서 I의 일반 안전 및 성능 요구사항(GSPR)에 따른 보안 설계 검토.</span>
+                        </li>
+                        <li>
+                            <strong>SBOM(Software Bill of Materials)</strong>
+                            <span>소프트웨어 구성 요소 관리 체계 구축 및 취약점 분석.</span>
+                        </li>
+                        <li>
+                            <strong>IEC 81001-5-1</strong>
+                            <span>의료기기 소프트웨어의 보안 라이프사이클 프로세스 수립 지원.</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+
         </div>
     </section>
 
-    <section id="ex-proof" class="section section-dark">
-        <div class="container">
-            <div class="section-header">
-                <h2>Explosion-Proof Systems (Ex)</h2>
-                <p>Safety solutions for potentially explosive atmospheres.</p>
+    <!-- 2. 기계류 현장 시험 -->
+    <section id="field-eval" class="section">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">기계류 현장 시험 <span class="cert-name">(Field Evaluation)</span></h2>
+                <p class="cert-slogan">"북미 시장 진출의 급행 노선, 시간과 비용의 혁신적 절감"</p>
             </div>
-            <div class="services-grid">
-                <div class="service-card" style="background-color: var(--color-deep-navy); border-color: rgba(255,255,255,0.1);">
-                    <h3>ISO/IEC 80079-34</h3>
-                    <p style="color: var(--color-slate-grey);">Specialized quality management system audits for Ex product manufacturing, an essential prerequisite for most global Ex certifications.</p>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>고가의 NRTL 정식 리스팅(Listing) 대신, 현장에서 제품의 안전성을 즉각 검사하여 통관 및 설치를 승인받는 제도입니다. 단발성 수출이나 대형 설비에 가장 효율적인 대안입니다.</p>
                 </div>
-                <div class="service-card" style="background-color: var(--color-deep-navy); border-color: rgba(255,255,255,0.1);">
-                    <h3>ATEX & IECEx</h3>
-                    <p style="color: var(--color-slate-grey);">Navigating the complexities of European and International certification schemes for equipment used in hazardous locations.</p>
-                </div>
-                <div class="service-card" style="background-color: var(--color-deep-navy); border-color: rgba(255,255,255,0.1);">
-                    <h3>NRTL-Ex</h3>
-                    <p style="color: var(--color-slate-grey);">Compliance pathways for North American hazardous location standards (Class/Division and Zone systems).</p>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>AHJ(당국) 승인 지원</strong>
+                            <span>미국 각 지역 검사관(AHJ)이 요구하는 안전 규격 충족 여부 현장 평가.</span>
+                        </li>
+                        <li>
+                            <strong>NFPA 79 & UL 508A 대응</strong>
+                            <span>산업용 기계 및 제어 패널에 대한 전기 안전 규격 검토.</span>
+                        </li>
+                        <li>
+                            <strong>사전 기술 감사(Pre-audit)</strong>
+                            <span>현장 시험 전 부적합 요소를 사전에 파악하여 한 번에 승인받을 수 있도록 가이드.</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+
+        </div>
+    </section>
+
+    <!-- 3. 방폭 품질 시스템 -->
+    <section id="ex-quality" class="section section-light">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">방폭 품질 시스템 <span class="cert-name">(ISO/IEC 80079-34)</span></h2>
+                <p class="cert-slogan">"방폭 인증의 심장, 완벽한 양산 품질 체계 구축"</p>
+            </div>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>방폭 제품(ATEX/IECEx) 인증은 제품 설계뿐만 아니라 제조사의 품질 시스템(QAN/QAR) 심사가 필수입니다. SGCA Partners는 방폭 특화 품질 시스템 구축의 최고 전문가입니다.</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>ISO/IEC 80079-34 컨설팅</strong>
+                            <span>방폭 제품 제조를 위한 특화 품질 매뉴얼 및 절차서 수립.</span>
+                        </li>
+                        <li>
+                            <strong>QAN/QAR 심사 대응</strong>
+                            <span>유럽 및 국제 방폭 인증기관의 공장 심사를 위한 사전 리허설 및 보완 지원.</span>
+                        </li>
+                        <li>
+                            <strong>위변조 방지 및 추적성 관리</strong>
+                            <span>방폭 부품의 기술적 일관성 유지를 위한 체계적인 공급망 관리 시스템 구축.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. 최신 사이버보안 규제 -->
+    <section id="latest-cybersec" class="section">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">최신 사이버보안 규제 <span class="cert-name">(EU CRA & RED)</span></h2>
+                <p class="cert-slogan">"급변하는 디지털 규제, 비즈니스 리스크를 기회로 전환"</p>
+            </div>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>2026년부터 강제되는 EU 사이버 복원력 법(CRA)과 무선 기기 지침(RED) 보안 요건은 모든 디지털 제품의 필수 요건입니다. 최신 규제를 가장 빠르게 해석하여 전략을 제시합니다.</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>EU CRA(사이버 복원력 법)</strong>
+                            <span>CE 마킹을 위한 필수 보안 요구사항 진단 및 적합성 평가 지원.</span>
+                        </li>
+                        <li>
+                            <strong>RED(무선 기기 지침) 보안</strong>
+                            <span>무선 통신 기기의 네트워크 보호 및 개인정보 보호 요건 대응.</span>
+                        </li>
+                        <li>
+                            <strong>Vulnerability Management</strong>
+                            <span>취약점 발견 시 보고 체계 및 보안 업데이트 배포 프로세스 수립 지원.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
     </section>
 
     <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom">
-                <p>&copy; 2026 SGCA Partners. All rights reserved.</p>
+        <div class="container footer-content">
+            <div class="footer-info">
+                <div class="footer-contact">
+                    <span class="contact-label">대표전화</span>
+                    <span class="contact-value">010-9231-9088</span>
+                    <span class="contact-label ms-3">이메일</span>
+                    <span class="contact-value">sim@sgca-partners.com</span>
+                </div>
+                <div class="footer-details">
+                    <span>SGCA Partners</span> <span class="divider">|</span>
+                    <span>사업자등록번호: 456-37-01417</span> <span class="divider">|</span>
+                    <span>대표파트너: 심상우</span>
+                </div>
+                <div class="footer-copyright">
+                    <p>Copyright &copy; SGCA Partners All Rights Reserved.</p>
+                </div>
             </div>
         </div>
     </footer>

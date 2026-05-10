@@ -1,66 +1,176 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SGCA Partners - Product Certification. NA Field Evaluation, CE, UKCA, KC.">
-    <title>Product Certification | SGCA Partners</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="SGCA Partners - 제품 인증. 북미 현장 평가, CE, UKCA, KC 마크.">
+    <title>제품 인증 | SGCA Partners</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <header class="navbar">
         <div class="container">
             <a href="index.html" class="logo">
-                SGCA<span class="logo-accent">Partners</span>
+                <img src="images/logo.svg" alt="SGCA Partners" height="70">
             </a>
             <nav>
                 <ul class="nav-links">
-                    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                    <li class="nav-item"><a href="management-system.html" class="nav-link">Management System</a></li>
-                    <li class="nav-item"><a href="product-certification.html" class="nav-link active">Product Certification</a></li>
-                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link">Specialized Sectors</a></li>
-                    <li class="nav-item"><a href="insights.html" class="nav-link">Insights</a></li>
+
+                    <li class="nav-item">
+                        <a href="management-system.html" class="nav-link">경영시스템 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="management-system.html#iso9001" class="dropdown-link">ISO 9001 (품질)</a>
+                            <a href="management-system.html#iso14001" class="dropdown-link">ISO 14001 (환경)</a>
+                            <a href="management-system.html#iso45001" class="dropdown-link">ISO 45001 (안전보건)</a>
+                            <a href="management-system.html#iso13485" class="dropdown-link">ISO 13485 (의료기기)</a>
+                            <a href="management-system.html#iso19443" class="dropdown-link">ISO 19443 (원자력)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="product-certification.html" class="nav-link active">제품 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="product-certification.html#nrtl" class="dropdown-link">NRTL (북미)</a>
+                            <a href="product-certification.html#ce" class="dropdown-link">CE marking (유럽)</a>
+                            <a href="product-certification.html#kc" class="dropdown-link">KC 인증 (한국)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link">전문 분야</a></li>
+                    <li class="nav-item"><a href="insights.html" class="nav-link">인사이트</a></li>
                 </ul>
             </nav>
+            <div class="language-selector">
+                <button class="lang-btn active">KR</button> | 
+                <button class="lang-btn">EN</button>
+            </div>
         </div>
     </header>
 
     <section class="page-header">
         <div class="container">
-            <h1>Product Certification</h1>
-            <p>Seamless Market Access for Industrial and High-Tech Equipment</p>
+            <h1>제품 인증</h1>
+            <p>산업용 및 첨단 장비의 원활한 글로벌 시장 진출 지원</p>
         </div>
     </section>
 
-    <section class="section section-light">
-        <div class="container">
-            <div class="services-grid">
-                <div class="service-card">
-                    <h3>North America (NA) Field Evaluation</h3>
-                    <span class="section-subtitle">Strategic Focus</span>
-                    <p>Fast-tracked field labeling and evaluations for unlisted equipment installed in the US and Canada to ensure local AHJ acceptance.</p>
+    <!-- NRTL -->
+    <section id="nrtl" class="section section-light">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">NRTL <span class="cert-name">(북미 제품 안전 인증)</span></h2>
+                <p class="cert-slogan">"미국과 캐나다 시장 진출을 위한 가장 확실한 안전 보증"</p>
+            </div>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>NRTL(Nationally Recognized Testing Laboratory)은 미국 노동부 산하 산업안전보건청(OSHA)이 인정한 시험소에서 제품 안전성을 인증받는 제도입니다. 미국 및 캐나다로 수출되는 전기/전자 제품 및 산업용 기계에 필수적입니다.</p>
                 </div>
-                <div class="service-card">
-                    <h3>CE & UKCA Marking</h3>
-                    <span class="section-subtitle">Europe & UK</span>
-                    <p>Comprehensive conformity assessment covering Machinery Regulation, EMC, Low Voltage, and specialized directives.</p>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 대상</h4>
+                    <p>산업용 제어 패널, IT 기기, 의료기기, 실험실 장비, 방폭 기기 등.</p>
                 </div>
-                <div class="service-card">
-                    <h3>KC Certification</h3>
-                    <span class="section-subtitle">East Asia (CN/JP/KR)</span>
-                    <p>Korea Certification and pathways into neighboring markets, ensuring electrical safety and electromagnetic compatibility.</p>
+                <div class="cert-box">
+                    <h4 class="box-title">SGCA Partners의 특화 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>Field Evaluation (현장 시험)</strong>
+                            <span>고가의 NRTL 정식 리스팅 대신, 현장에서 신속하게 안전성을 검사하여 통관 및 설치를 돕는 비용 효율적인 솔루션을 제공합니다.</span>
+                        </li>
+                        <li>
+                            <strong>설계 검토</strong>
+                            <span>북미 규격(UL, CSA, NFPA)에 맞지 않는 설계를 사전에 파악하여 수정 가이드를 제시합니다.</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
+
+        </div>
+    </section>
+
+    <!-- CE Marking -->
+    <section id="ce" class="section">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">CE Marking <span class="cert-name">(유럽 연합 통합 인증)</span></h2>
+                <p class="cert-slogan">"유럽 30개국 시장으로 향하는 무역 여권"</p>
+            </div>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>CE 마킹은 유럽 연합(EU) 내에서 유통되는 제품이 안전, 건강, 환경 및 소비자 보호와 관련된 모든 EU 지침(Directives)을 준수했음을 의미합니다. 유럽 시장 진출을 위해 반드시 부착해야 하는 강제 인증입니다.</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 지침</h4>
+                    <p>기계(MD/MR), 저전압(LVD), 전자파(EMC), 의료기기(MDR), 사이버보안(CRA/RED).</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">SGCA Partners의 특화 서비스</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>최신 규제 대응</strong>
+                            <span>2026년부터 강화되는 기계 규정(Machinery Regulation) 및 사이버 복원력 법(CRA)에 대한 선제적 기술 문서(TCF) 작성을 지원합니다.</span>
+                        </li>
+                        <li>
+                            <strong>적합성 선언(DoC) 가이드</strong>
+                            <span>복잡한 시험 절차와 위험 평가(Risk Assessment) 보고서 작성을 전문가가 직접 안내합니다.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- KC 인증 -->
+    <section id="kc" class="section section-light">
+        <div class="cert-detail-container container">
+            <div class="cert-header">
+                <h2 class="cert-title">KC 인증 <span class="cert-name">(대한민국 국가 통합 인증)</span></h2>
+                <p class="cert-slogan">"한국 시장 진입을 위한 스마트한 규제 가이드"</p>
+            </div>
+            <div class="cert-content">
+                <div class="cert-box">
+                    <h4 class="box-title">개요</h4>
+                    <p>대한민국 내에서 유통되는 제품의 안전, 보건, 환경, 품질 등을 국가가 인증하는 제도입니다. 전기용품 및 생활용품 안전관리법, 전파법 등에 의거하여 적합성을 평가받아야 합니다.</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">주요 대상</h4>
+                    <p>전기용품, 생활용품, 어린이 제품, 방송통신기자재(무선 기기 등).</p>
+                </div>
+                <div class="cert-box">
+                    <h4 class="box-title">SGCA Partners의 특화 서비스 (특히 중·일 수출 기업 대상)</h4>
+                    <ul class="cert-benefits-list">
+                        <li>
+                            <strong>한·중·일 원스톱 허브</strong>
+                            <span>중국과 일본 제조사가 한국으로 제품을 수출할 때 발생하는 언어 장벽과 규제 해석 오류를 전문가가 실시간으로 해결합니다.</span>
+                        </li>
+                        <li>
+                            <strong>사후 관리 지원</strong>
+                            <span>인증 취득 후 진행되는 정기 심사 및 법규 개정에 따른 라벨링(Labeling) 수정 가이드를 제공합니다.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
         </div>
     </section>
 
     <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom">
-                <p>&copy; 2026 SGCA Partners. All rights reserved.</p>
+        <div class="container footer-content">
+            <div class="footer-info">
+                <div class="footer-contact">
+                    <span class="contact-label">대표전화</span>
+                    <span class="contact-value">010-9231-9088</span>
+                    <span class="contact-label ms-3">이메일</span>
+                    <span class="contact-value">sim@sgca-partners.com</span>
+                </div>
+                <div class="footer-details">
+                    <span>SGCA Partners</span> <span class="divider">|</span>
+                    <span>사업자등록번호: 456-37-01417</span> <span class="divider">|</span>
+                    <span>대표파트너: 심상우</span>
+                </div>
+                <div class="footer-copyright">
+                    <p>Copyright &copy; SGCA Partners All Rights Reserved.</p>
+                </div>
             </div>
         </div>
     </footer>

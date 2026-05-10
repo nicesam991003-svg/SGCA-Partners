@@ -1,13 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="SGCA Partners - Insights and Regulatory Updates.">
-    <title>Insights | SGCA Partners</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <meta name="description" content="SGCA Partners - 기술 블로그 및 최신 규제 업데이트.">
+    <title>인사이트 | SGCA Partners</title>
     <link rel="stylesheet" href="css/style.css">
     <style>
         .blog-grid {
@@ -56,24 +53,44 @@
     <header class="navbar">
         <div class="container">
             <a href="index.html" class="logo">
-                SGCA<span class="logo-accent">Partners</span>
+                <img src="images/logo.svg" alt="SGCA Partners" height="70">
             </a>
             <nav>
                 <ul class="nav-links">
-                    <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
-                    <li class="nav-item"><a href="management-system.html" class="nav-link">Management System</a></li>
-                    <li class="nav-item"><a href="product-certification.html" class="nav-link">Product Certification</a></li>
-                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link">Specialized Sectors</a></li>
-                    <li class="nav-item"><a href="insights.html" class="nav-link active">Insights</a></li>
+
+                    <li class="nav-item">
+                        <a href="management-system.html" class="nav-link">경영시스템 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="management-system.html#iso9001" class="dropdown-link">ISO 9001 (품질)</a>
+                            <a href="management-system.html#iso14001" class="dropdown-link">ISO 14001 (환경)</a>
+                            <a href="management-system.html#iso45001" class="dropdown-link">ISO 45001 (안전보건)</a>
+                            <a href="management-system.html#iso13485" class="dropdown-link">ISO 13485 (의료기기)</a>
+                            <a href="management-system.html#iso19443" class="dropdown-link">ISO 19443 (원자력)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="product-certification.html" class="nav-link">제품 인증</a>
+                        <div class="dropdown-menu">
+                            <a href="product-certification.html#nrtl" class="dropdown-link">NRTL (북미)</a>
+                            <a href="product-certification.html#ce" class="dropdown-link">CE marking (유럽)</a>
+                            <a href="product-certification.html#kc" class="dropdown-link">KC 인증 (한국)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item"><a href="specialized-sectors.html" class="nav-link">전문 분야</a></li>
+                    <li class="nav-item"><a href="insights.html" class="nav-link active">인사이트</a></li>
                 </ul>
             </nav>
+            <div class="language-selector">
+                <button class="lang-btn active">KR</button> | 
+                <button class="lang-btn">EN</button>
+            </div>
         </div>
     </header>
 
     <section class="page-header">
         <div class="container">
-            <h1>Regulatory Insights</h1>
-            <p>Latest updates on FDA, MDR, CRA, and Nuclear Safety Standards</p>
+            <h1>규제 인사이트</h1>
+            <p>FDA, MDR, CRA 및 원자력 안전 표준에 대한 최신 글로벌 업데이트</p>
         </div>
     </section>
 
@@ -81,30 +98,30 @@
         <div class="container">
             <div class="blog-grid">
                 <article class="blog-card">
-                    <div class="blog-image">Image Placeholder</div>
+                    <div class="blog-image">이미지 영역</div>
                     <div class="blog-content">
-                        <span class="blog-date">May 1, 2026</span>
-                        <h3 class="blog-title">Navigating the EU Cyber Resilience Act (CRA)</h3>
-                        <p>Key strategies for manufacturers of products with digital elements to comply with the upcoming CRA deadlines.</p>
-                        <a href="#" style="color: var(--color-accent); font-weight: 500;">Read More &rarr;</a>
+                        <span class="blog-date">2026년 5월 1일</span>
+                        <h3 class="blog-title">EU 사이버 복원력 법안(CRA) 완벽 가이드</h3>
+                        <p>디지털 요소가 포함된 제품 제조업체가 다가오는 CRA 기한을 준수하고 규제 리스크를 최소화하기 위한 핵심 전략을 소개합니다.</p>
+                        <a href="#" style="color: var(--color-accent); font-weight: 500;">자세히 보기 &rarr;</a>
                     </div>
                 </article>
                 <article class="blog-card">
-                    <div class="blog-image">Image Placeholder</div>
+                    <div class="blog-image">이미지 영역</div>
                     <div class="blog-content">
-                        <span class="blog-date">April 15, 2026</span>
-                        <h3 class="blog-title">ISO 19443: Securing the Nuclear Supply Chain</h3>
-                        <p>An in-depth look at how IT and supply chain security are deeply integrated into the latest nuclear quality management audits.</p>
-                        <a href="#" style="color: var(--color-accent); font-weight: 500;">Read More &rarr;</a>
+                        <span class="blog-date">2026년 4월 15일</span>
+                        <h3 class="blog-title">ISO 19443: 원자력 공급망 보안의 핵심</h3>
+                        <p>최신 원자력 품질 경영 시스템 심사에서 IT 및 공급망 보안이 어떻게 깊숙이 통합되어 있는지 심층적으로 분석합니다.</p>
+                        <a href="#" style="color: var(--color-accent); font-weight: 500;">자세히 보기 &rarr;</a>
                     </div>
                 </article>
                 <article class="blog-card">
-                    <div class="blog-image">Image Placeholder</div>
+                    <div class="blog-image">이미지 영역</div>
                     <div class="blog-content">
-                        <span class="blog-date">March 28, 2026</span>
-                        <h3 class="blog-title">FDA Premarket Cybersecurity Guidelines</h3>
-                        <p>What medical device manufacturers need to know about the latest FDA refuse-to-accept policies regarding cybersecurity.</p>
-                        <a href="#" style="color: var(--color-accent); font-weight: 500;">Read More &rarr;</a>
+                        <span class="blog-date">2026년 3월 28일</span>
+                        <h3 class="blog-title">FDA 시판 전 사이버보안 가이던스</h3>
+                        <p>의료기기 제조업체가 반드시 알아야 할 사이버보안 관련 FDA의 최신 승인 거부(Refuse-to-Accept) 정책과 대응 방안을 안내합니다.</p>
+                        <a href="#" style="color: var(--color-accent); font-weight: 500;">자세히 보기 &rarr;</a>
                     </div>
                 </article>
             </div>
@@ -112,9 +129,22 @@
     </section>
 
     <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom">
-                <p>&copy; 2026 SGCA Partners. All rights reserved.</p>
+        <div class="container footer-content">
+            <div class="footer-info">
+                <div class="footer-contact">
+                    <span class="contact-label">대표전화</span>
+                    <span class="contact-value">010-9231-9088</span>
+                    <span class="contact-label ms-3">이메일</span>
+                    <span class="contact-value">sim@sgca-partners.com</span>
+                </div>
+                <div class="footer-details">
+                    <span>SGCA Partners</span> <span class="divider">|</span>
+                    <span>사업자등록번호: 456-37-01417</span> <span class="divider">|</span>
+                    <span>대표파트너: 심상우</span>
+                </div>
+                <div class="footer-copyright">
+                    <p>Copyright &copy; SGCA Partners All Rights Reserved.</p>
+                </div>
             </div>
         </div>
     </footer>
