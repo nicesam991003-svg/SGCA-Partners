@@ -1,0 +1,116 @@
+/* --- Admin Page Styles --- */
+.admin-container {
+    max-width: 800px;
+    margin: 60px auto;
+    padding: 40px;
+    background: var(--color-crisp-white);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+    border-top: 4px solid var(--color-deep-navy);
+}
+.admin-header {
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 20px;
+}
+.admin-header h2 {
+    color: var(--color-deep-navy);
+    margin-bottom: 10px;
+}
+.admin-header p {
+    color: var(--color-slate-grey);
+    font-size: 1.05rem;
+}
+.form-group {
+    margin-bottom: 25px;
+}
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--color-deep-navy);
+}
+.form-group input, .form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+    transition: border-color var(--transition-fast);
+}
+.form-group input:focus, .form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+}
+.form-group textarea {
+    resize: vertical;
+    height: 120px;
+}
+.btn-submit {
+    background: var(--color-deep-navy);
+    color: #fff;
+    padding: 15px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    width: 100%;
+    font-weight: bold;
+    transition: background var(--transition-fast);
+}
+.btn-submit:hover {
+    background: var(--color-accent);
+}
+.admin-list {
+    margin-top: 60px;
+}
+.admin-item {
+    border: 1px solid #eee;
+    padding: 20px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #fafbfc;
+}
+.admin-item-info h4 {
+    margin-bottom: 8px;
+    color: var(--color-deep-navy);
+}
+.admin-item-info p {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+    color: var(--color-slate-grey);
+}
+.btn-edit {
+    background: #fff;
+    color: var(--color-deep-navy);
+    border: 1px solid var(--color-deep-navy);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    margin-right: 8px;
+}
+.btn-edit:hover {
+    background: var(--color-deep-navy);
+    color: #fff;
+}
+.btn-delete {
+    background: #fff;
+    color: #e74c3c;
+    border: 1px solid #e74c3c;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.btn-delete:hover {
+    background: #e74c3c;
+    color: #fff;
+}
