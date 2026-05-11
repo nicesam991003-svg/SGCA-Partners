@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 - 리포트 등록 | SGCA Partners</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+</head>
+<body style="background-color: #f4f6f9;">
+    <!-- Admin Navbar -->
+    <header class="navbar" style="position: static;">
+        <div class="container" style="min-height: 80px; justify-content: space-between;">
+            <a href="index.html" class="logo">
+                <img src="images/logo.svg" alt="SGCA Partners" height="50">
+            </a>
+            <div style="display:flex; align-items:center; gap: 20px;">
+                <a href="insights.html" style="font-weight:600; color:var(--color-slate-grey); text-decoration:underline;">인사이트 화면 보기</a>
+                <div style="font-weight: 700; font-size: 1.2rem; color: var(--color-accent); background: rgba(211,164,92,0.1); padding: 5px 15px; border-radius: 20px;">관리자 모드</div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="admin-container">
+            <div class="admin-header">
+                <h2>인사이트 리포트 등록</h2>
+                <p>이곳에서 작성한 내용은 인사이트(Insight) 페이지에 실시간 카드 뉴스로 반영됩니다.</p>
+            </div>
+
+            <form id="admin-form">
+                <div class="form-group">
+                    <label>리포트 제목</label>
+                    <input type="text" id="post-title" required placeholder="예: FDA 의료기기 사이버보안 최신 가이드라인 발표">
+                </div>
+                <div class="form-group">
+                    <label>작성 일자</label>
+                    <input type="date" id="post-date" required>
+                </div>
+                <div class="form-group">
+                    <label>원문 링크 URL (선택사항)</label>
+                    <input type="url" id="post-link" placeholder="예: https://blog.naver.com/... (카드 클릭 시 이동할 주소)">
+                </div>
+                <div class="form-group">
+                    <label>요약 내용</label>
+                    <textarea id="post-desc" required placeholder="리포트의 핵심 내용을 2~3줄로 요약해 주세요."></textarea>
+                </div>
+                <button type="submit" class="btn-submit">새 리포트 등록하기</button>
+            </form>
+
+            <div class="admin-list">
+                <h3 style="margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; color: var(--color-deep-navy);">등록된 리포트 관리</h3>
+                <div id="post-list-container">
+                    <!-- 자바스크립트로 로컬 스토리지 목록 렌더링 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editingId = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // 오늘 날짜로 기본 세팅
+            document.getElementById('post-date').valueAsDate = new Date();
+            renderList();
+
+            document.getElementById('admin-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const title = document.getElementById('post-title').value;
+                const date = document.getElementById('post-date').value;
+                const link = document.getElementById('post-link').value || '#';
+                const desc = document.getElementById('post-desc').value;
+
+                // 로컬 스토리지에서 기존 데이터 불러오기
+                let posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
+
+                if (editingId) {
+                    // 기존 리포트 수정
+                    const postIndex = posts.findIndex(p => p.id === editingId);
+                    if (postIndex !== -1) {
+                        posts[postIndex] = {
+                            id: editingId,
+                            title,
+                            date,
+                            link,
+                            desc
+                        };
+                    }
+                    alert('인사이트 리포트가 성공적으로 수정되었습니다!');
+                    editingId = null;
+                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
+                } else {
+                    // 새 리포트 등록
+                    const newPost = {
+                        id: Date.now().toString(),
+                        title,
+                        date,
+                        link,
+                        desc
+                    };
+                    // 새 리포트를 배열의 맨 앞에 추가 (최신순)
+                    posts.unshift(newPost);
+                    alert('인사이트 리포트가 성공적으로 등록되었습니다!');
+                }
+                
+                // 로컬 스토리지에 저장
+                localStorage.setItem('sgca_insights', JSON.stringify(posts));
+                
+                // 폼 초기화 및 오늘 날짜 재설정
+                this.reset();
+                document.getElementById('post-date').valueAsDate = new Date();
+                
+                // 목록 다시 그리기
+                renderList();
+            });
+        });
+
+        function renderList() {
+            const container = document.getElementById('post-list-container');
+            const posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
+
+            if (posts.length === 0) {
+                container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">현재 등록된 리포트가 없습니다.</p>';
+                return;
+            }
+
+            let html = '';
+            posts.forEach(post => {
+                html += `
+                    <div class="admin-item">
+                        <div class="admin-item-info">
+                            <h4>${post.title}</h4>
+                            <p>${post.date} &nbsp;|&nbsp; ${post.desc.substring(0, 40)}...</p>
+                        </div>
+                        <div style="white-space: nowrap;">
+                            <button type="button" class="btn-edit" onclick="editPost('${post.id}')">수정</button>
+                            <button type="button" class="btn-delete" onclick="deletePost('${post.id}')">삭제</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function editPost(id) {
+            const posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
+            const post = posts.find(p => p.id === id);
+            
+            if (post) {
+                editingId = id;
+                document.getElementById('post-title').value = post.title;
+                document.getElementById('post-date').value = post.date;
+                document.getElementById('post-link').value = post.link === '#' ? '' : post.link;
+                document.getElementById('post-desc').value = post.desc;
+                
+                document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
+                
+                // 상단 폼 영역으로 부드럽게 스크롤
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+
+        function deletePost(id) {
+            if(confirm('정말 이 리포트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                let posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
+                posts = posts.filter(post => post.id !== id);
+                localStorage.setItem('sgca_insights', JSON.stringify(posts));
+                
+                // 만약 삭제하려는 아이템을 현재 수정 중이었다면 폼도 초기화
+                if (editingId === id) {
+                    editingId = null;
+                    document.getElementById('admin-form').reset();
+                    document.getElementById('post-date').valueAsDate = new Date();
+                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
+                }
+                
+                renderList();
+            }
+        }
+    </script>
+</body>
+</html>
