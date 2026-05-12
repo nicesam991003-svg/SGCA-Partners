@@ -57,10 +57,11 @@
         </div>
     </div>
 
-    <script type="module">
-        import { db } from './js/firebase-init.js';
-        import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-init.js"></script>
+    <script>
+        // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
         let editingId = null;
 
         // Firebase 데이터 로드 및 렌더링
@@ -70,8 +71,7 @@
 
             try {
                 // Firebase에서 'insights' 컬렉션의 데이터를 작성일자 내림차순(최신순)으로 가져오기
-                const q = query(collection(db, "insights"), orderBy("date", "desc"));
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
                 
                 let posts = [];
                 querySnapshot.forEach((doc) => {
@@ -121,7 +121,7 @@
                         const id = e.target.getAttribute('data-id');
                         if(confirm('정말 이 리포트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
                             try {
-                                await deleteDoc(doc(db, "insights", id));
+                                await db.collection("insights").doc(id).delete();
                                 alert('삭제되었습니다.');
                                 
                                 if (editingId === id) {
@@ -172,8 +172,7 @@
                 try {
                     if (editingId) {
                         // 기존 리포트 수정
-                        const docRef = doc(db, "insights", editingId);
-                        await updateDoc(docRef, {
+                        await db.collection("insights").doc(editingId).update({
                             title, date, link, desc
                         });
                         alert('인사이트 리포트가 성공적으로 수정되었습니다!');
@@ -181,8 +180,8 @@
                         document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
                     } else {
                         // 새 리포트 등록
-                        await addDoc(collection(db, "insights"), {
-                            title, date, link, desc, createdAt: new Date()
+                        await db.collection("insights").add({
+                            title, date, link, desc, createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         alert('인사이트 리포트가 성공적으로 등록되었습니다!');
                     }

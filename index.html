@@ -185,9 +185,11 @@
         </div>
     </footer>
     <script src="js/main.js"></script>
-    <script type="module">
-        import { db } from './js/firebase-init.js';
-        import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-init.js"></script>
+    <script>
+        // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
 
         document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('main-rss-feed-container');
@@ -201,8 +203,7 @@
 
             try {
                 // 최신 3개만 가져오기
-                const q = query(collection(db, "insights"), orderBy("date", "desc"), limit(3));
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(3).get();
                 
                 let displayItems = [];
                 querySnapshot.forEach((doc) => {
