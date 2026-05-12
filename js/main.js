@@ -1,6 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Mobile menu toggle logic could be added here
+  // Mobile menu toggle logic
+  const navbarContainer = document.querySelector('.navbar .container');
+  const nav = document.querySelector('nav');
   
+  if (navbarContainer && nav) {
+      // Inject hamburger button
+      const mobileBtn = document.createElement('button');
+      mobileBtn.className = 'mobile-menu-btn';
+      mobileBtn.innerHTML = '<span></span><span></span><span></span>';
+      
+      navbarContainer.appendChild(mobileBtn);
+      
+      mobileBtn.addEventListener('click', () => {
+          mobileBtn.classList.toggle('active');
+          nav.classList.toggle('active');
+      });
+      
+      // Close menu when clicking a link
+      document.querySelectorAll('.nav-link, .dropdown-link').forEach(link => {
+          link.addEventListener('click', () => {
+              mobileBtn.classList.remove('active');
+              nav.classList.remove('active');
+          });
+      });
+  }
   // Smooth scroll for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
