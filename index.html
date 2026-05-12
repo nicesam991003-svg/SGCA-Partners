@@ -184,6 +184,23 @@
             </div>
         </div>
     </footer>
+
+    <!-- Insight Modal -->
+    <div id="insightModal" class="insight-modal">
+        <div class="insight-modal-content">
+            <span class="insight-modal-close" onclick="closeInsightModal()">&times;</span>
+            <div class="insight-modal-header">
+                <span id="modalDate" class="modal-date"></span>
+                <h2 id="modalTitle" class="modal-title"></h2>
+            </div>
+            <div class="insight-modal-body" id="modalBody">
+            </div>
+            <div class="insight-modal-footer">
+                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" onclick="window.open(this.href, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;">원문 링크 보기</a>
+            </div>
+        </div>
+    </div>
+
     <script src="js/main.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
@@ -205,19 +222,19 @@
                 // 최신 3개만 가져오기
                 const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(3).get();
                 
-                let displayItems = [];
+                window.allInsights = [];
                 querySnapshot.forEach((doc) => {
-                    displayItems.push({ id: doc.id, ...doc.data() });
+                    window.allInsights.push({ id: doc.id, ...doc.data() });
                 });
 
-                if (displayItems.length === 0) {
+                if (window.allInsights.length === 0) {
                     container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다.</p>';
                     return;
                 }
 
                 let html = '<div class="main-rss-grid">';
                 
-                displayItems.forEach(item => {
+                window.allInsights.forEach(item => {
                     let dateStr = item.date;
                     if(dateStr && dateStr.includes('-')) {
                         const parts = dateStr.split('-');
@@ -227,13 +244,13 @@
                     const shortDesc = item.desc.length > 250 ? item.desc.substring(0, 250) + '...' : item.desc;
 
                     html += `
-                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="main-rss-card">
+                        <div onclick="openInsightModal('${item.id}')" class="main-rss-card" style="cursor: pointer;">
                             <div class="main-rss-content">
                                 <span class="main-rss-date">${dateStr}</span>
                                 <h3 class="main-rss-title">${item.title}</h3>
                                 <p class="main-rss-desc">${shortDesc}</p>
                             </div>
-                        </a>
+                        </div>
                     `;
                 });
                 
@@ -242,6 +259,46 @@
             } catch (error) {
                 console.error("데이터 로드 실패: ", error);
                 container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+            }
+        });
+
+        window.openInsightModal = function(id) {
+            const item = window.allInsights.find(i => i.id === id);
+            if (!item) return;
+
+            let dateStr = item.date;
+            if(dateStr && dateStr.includes('-')) {
+                const parts = dateStr.split('-');
+                dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
+            }
+
+            document.getElementById('modalDate').textContent = dateStr;
+            document.getElementById('modalTitle').textContent = item.title;
+            if (item.fullContent) {
+                document.getElementById('modalBody').innerHTML = item.fullContent;
+            } else {
+                document.getElementById('modalBody').innerHTML = item.desc.replace(/\n/g, '<br>');
+            }
+            
+            const linkEl = document.getElementById('modalLink');
+            if (item.link && item.link !== '#') {
+                linkEl.href = item.link;
+                linkEl.style.display = 'inline-block';
+            } else {
+                linkEl.style.display = 'none';
+            }
+
+            document.getElementById('insightModal').style.display = 'flex';
+        };
+
+        window.closeInsightModal = function() {
+            document.getElementById('insightModal').style.display = 'none';
+        };
+        
+        window.addEventListener('click', function(event) {
+            const modal = document.getElementById('insightModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
             }
         });
     </script>
