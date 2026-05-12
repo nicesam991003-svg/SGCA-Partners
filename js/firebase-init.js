@@ -1,33 +1,30 @@
 // js/firebase-init.js
-// Firebase SDK (모듈 방식)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+// 로컬 파일(file://) 환경에서도 동작하도록 Firebase Compat 버전을 사용합니다.
 
-// TODO: 이 부분을 실제 Firebase 프로젝트의 설정값으로 교체해야 합니다!
-// 1. 구글 Firebase 콘솔(https://console.firebase.google.com/) 접속
-// 2. 새 프로젝트 생성 -> 웹 앱(</>) 추가
-// 3. Firestore Database 만들기 (테스트 모드로 시작 권장)
-// 4. 프로젝트 설정에서 아래의 firebaseConfig 값을 복사하여 붙여넣기 하세요.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAOOGNkjpW48SUkX7qZfE28hG-yLj4sMRI",
+  authDomain: "sgca-platform-7abbc.firebaseapp.com",
+  projectId: "sgca-platform-7abbc",
+  storageBucket: "sgca-platform-7abbc.firebasestorage.app",
+  messagingSenderId: "1076998535653",
+  appId: "1:1076998535653:web:286639c3d92a7cfb8f970c",
+  measurementId: "G-9XZ257Q648"
 };
 
-let app, db;
+let db = null;
 
 try {
-    // Firebase 앱 초기화
-    app = initializeApp(firebaseConfig);
+    // Firebase 앱 초기화 (전역 firebase 객체 사용)
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
     
     // Firestore 데이터베이스 참조 가져오기
-    db = getFirestore(app);
+    db = firebase.firestore();
     console.log("Firebase가 초기화되었습니다.");
 } catch (error) {
     console.error("Firebase 초기화 중 오류 발생 (설정값을 확인해주세요): ", error);
 }
 
-export { db };
+// 창 전역 객체에 db 할당하여 다른 스크립트에서 사용 가능하게 함
+window.db = db;

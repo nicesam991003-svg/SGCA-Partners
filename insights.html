@@ -113,10 +113,11 @@
         </div>
     </footer>
     <script src="js/main.js"></script>
-    <script type="module">
-        import { db } from './js/firebase-init.js';
-        import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
-
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+    <script src="js/firebase-init.js"></script>
+    <script>
+        // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
         let allInsights = [];
 
         window.renderInsightCards = function(count) {
@@ -189,8 +190,7 @@
             container.innerHTML = '<div class="loading-text">최신 리포트를 불러오는 중입니다...</div>';
 
             try {
-                const q = query(collection(db, "insights"), orderBy("date", "desc"));
-                const querySnapshot = await getDocs(q);
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
                 
                 querySnapshot.forEach((doc) => {
                     allInsights.push({ id: doc.id, ...doc.data() });
