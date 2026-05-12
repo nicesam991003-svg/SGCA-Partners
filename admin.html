@@ -57,128 +57,148 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { db } from './js/firebase-init.js';
+        import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
         let editingId = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // 오늘 날짜로 기본 세팅
-            document.getElementById('post-date').valueAsDate = new Date();
-            renderList();
+        // Firebase 데이터 로드 및 렌더링
+        async function renderList() {
+            const container = document.getElementById('post-list-container');
+            container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">데이터를 불러오는 중입니다...</p>';
 
-            document.getElementById('admin-form').addEventListener('submit', function(e) {
+            try {
+                // Firebase에서 'insights' 컬렉션의 데이터를 작성일자 내림차순(최신순)으로 가져오기
+                const q = query(collection(db, "insights"), orderBy("date", "desc"));
+                const querySnapshot = await getDocs(q);
+                
+                let posts = [];
+                querySnapshot.forEach((doc) => {
+                    posts.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (posts.length === 0) {
+                    container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">현재 등록된 리포트가 없습니다.</p>';
+                    return;
+                }
+
+                let html = '';
+                posts.forEach(post => {
+                    html += `
+                        <div class="admin-item">
+                            <div class="admin-item-info">
+                                <h4>${post.title}</h4>
+                                <p>${post.date} &nbsp;|&nbsp; ${post.desc.substring(0, 40)}...</p>
+                            </div>
+                            <div style="white-space: nowrap;">
+                                <button type="button" class="btn-edit" data-id="${post.id}" data-title="${post.title}" data-date="${post.date}" data-link="${post.link}" data-desc="${post.desc.replace(/"/g, '&quot;')}">수정</button>
+                                <button type="button" class="btn-delete" data-id="${post.id}">삭제</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+
+                // 수정 버튼 이벤트 리스너 추가
+                document.querySelectorAll('.btn-edit').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const target = e.target;
+                        editingId = target.getAttribute('data-id');
+                        document.getElementById('post-title').value = target.getAttribute('data-title');
+                        document.getElementById('post-date').value = target.getAttribute('data-date');
+                        document.getElementById('post-link').value = target.getAttribute('data-link') === '#' ? '' : target.getAttribute('data-link');
+                        document.getElementById('post-desc').value = target.getAttribute('data-desc');
+                        
+                        document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                });
+
+                // 삭제 버튼 이벤트 리스너 추가
+                document.querySelectorAll('.btn-delete').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const id = e.target.getAttribute('data-id');
+                        if(confirm('정말 이 리포트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                            try {
+                                await deleteDoc(doc(db, "insights", id));
+                                alert('삭제되었습니다.');
+                                
+                                if (editingId === id) {
+                                    editingId = null;
+                                    document.getElementById('admin-form').reset();
+                                    document.getElementById('post-date').valueAsDate = new Date();
+                                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
+                                }
+                                
+                                renderList();
+                            } catch (error) {
+                                console.error("Error removing document: ", error);
+                                alert("삭제 중 오류가 발생했습니다. (Firebase 설정을 확인하세요)");
+                            }
+                        }
+                    });
+                });
+
+            } catch (error) {
+                console.error("데이터 로드 실패: ", error);
+                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 30px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('post-date').valueAsDate = new Date();
+            
+            // db 객체가 정상적으로 불러와졌는지 확인 후 렌더링
+            if(db) {
+                renderList();
+            } else {
+                document.getElementById('post-list-container').innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 30px 0;">js/firebase-init.js 파일에서 Firebase 설정(Config)을 입력해 주세요.</p>`;
+            }
+
+            document.getElementById('admin-form').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
+                if(!db) {
+                    alert('Firebase가 연결되지 않았습니다. js/firebase-init.js를 확인해주세요.');
+                    return;
+                }
+
                 const title = document.getElementById('post-title').value;
                 const date = document.getElementById('post-date').value;
                 const link = document.getElementById('post-link').value || '#';
                 const desc = document.getElementById('post-desc').value;
 
-                // 로컬 스토리지에서 기존 데이터 불러오기
-                let posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
-
-                if (editingId) {
-                    // 기존 리포트 수정
-                    const postIndex = posts.findIndex(p => p.id === editingId);
-                    if (postIndex !== -1) {
-                        posts[postIndex] = {
-                            id: editingId,
-                            title,
-                            date,
-                            link,
-                            desc
-                        };
+                try {
+                    if (editingId) {
+                        // 기존 리포트 수정
+                        const docRef = doc(db, "insights", editingId);
+                        await updateDoc(docRef, {
+                            title, date, link, desc
+                        });
+                        alert('인사이트 리포트가 성공적으로 수정되었습니다!');
+                        editingId = null;
+                        document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
+                    } else {
+                        // 새 리포트 등록
+                        await addDoc(collection(db, "insights"), {
+                            title, date, link, desc, createdAt: new Date()
+                        });
+                        alert('인사이트 리포트가 성공적으로 등록되었습니다!');
                     }
-                    alert('인사이트 리포트가 성공적으로 수정되었습니다!');
-                    editingId = null;
-                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
-                } else {
-                    // 새 리포트 등록
-                    const newPost = {
-                        id: Date.now().toString(),
-                        title,
-                        date,
-                        link,
-                        desc
-                    };
-                    // 새 리포트를 배열의 맨 앞에 추가 (최신순)
-                    posts.unshift(newPost);
-                    alert('인사이트 리포트가 성공적으로 등록되었습니다!');
+                    
+                    // 폼 초기화 및 오늘 날짜 재설정
+                    this.reset();
+                    document.getElementById('post-date').valueAsDate = new Date();
+                    
+                    // 목록 다시 그리기
+                    renderList();
+                } catch (error) {
+                    console.error("문서 저장 중 오류: ", error);
+                    alert("저장 중 오류가 발생했습니다. Firebase 설정을 확인하세요.");
                 }
-                
-                // 로컬 스토리지에 저장
-                localStorage.setItem('sgca_insights', JSON.stringify(posts));
-                
-                // 폼 초기화 및 오늘 날짜 재설정
-                this.reset();
-                document.getElementById('post-date').valueAsDate = new Date();
-                
-                // 목록 다시 그리기
-                renderList();
             });
         });
-
-        function renderList() {
-            const container = document.getElementById('post-list-container');
-            const posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
-
-            if (posts.length === 0) {
-                container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">현재 등록된 리포트가 없습니다.</p>';
-                return;
-            }
-
-            let html = '';
-            posts.forEach(post => {
-                html += `
-                    <div class="admin-item">
-                        <div class="admin-item-info">
-                            <h4>${post.title}</h4>
-                            <p>${post.date} &nbsp;|&nbsp; ${post.desc.substring(0, 40)}...</p>
-                        </div>
-                        <div style="white-space: nowrap;">
-                            <button type="button" class="btn-edit" onclick="editPost('${post.id}')">수정</button>
-                            <button type="button" class="btn-delete" onclick="deletePost('${post.id}')">삭제</button>
-                        </div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
-        }
-
-        function editPost(id) {
-            const posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
-            const post = posts.find(p => p.id === id);
-            
-            if (post) {
-                editingId = id;
-                document.getElementById('post-title').value = post.title;
-                document.getElementById('post-date').value = post.date;
-                document.getElementById('post-link').value = post.link === '#' ? '' : post.link;
-                document.getElementById('post-desc').value = post.desc;
-                
-                document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
-                
-                // 상단 폼 영역으로 부드럽게 스크롤
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            }
-        }
-
-        function deletePost(id) {
-            if(confirm('정말 이 리포트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-                let posts = JSON.parse(localStorage.getItem('sgca_insights')) || [];
-                posts = posts.filter(post => post.id !== id);
-                localStorage.setItem('sgca_insights', JSON.stringify(posts));
-                
-                // 만약 삭제하려는 아이템을 현재 수정 중이었다면 폼도 초기화
-                if (editingId === id) {
-                    editingId = null;
-                    document.getElementById('admin-form').reset();
-                    document.getElementById('post-date').valueAsDate = new Date();
-                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
-                }
-                
-                renderList();
-            }
-        }
     </script>
 </body>
 </html>

@@ -346,18 +346,33 @@ nav {
 }
 
 @media (max-width: 992px) {
+  .hero-slider {
+    height: auto;
+  }
+
   .slide {
     flex-direction: column;
   }
 
   .slide-image {
-    flex: 1;
-    min-height: 350px;
+    flex: none;
+    height: 350px;
   }
 
   .slide-text {
-    flex: 1;
-    min-height: 300px;
+    flex: none;
+    padding: 3rem 2rem;
+    min-height: 350px;
+  }
+
+  .slide-text h1 {
+    font-size: 2.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .slide-text p {
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   .slider-controls {
@@ -365,7 +380,6 @@ nav {
     right: 0;
     bottom: auto;
     top: 285px;
-    /* Approx bottom of image on mobile */
   }
 }
 

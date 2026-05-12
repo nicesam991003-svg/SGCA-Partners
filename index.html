@@ -185,43 +185,63 @@
         </div>
     </footer>
     <script src="js/main.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
+    <script type="module">
+        import { db } from './js/firebase-init.js';
+        import { collection, getDocs, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+
+        document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('main-rss-feed-container');
-            let items = JSON.parse(localStorage.getItem('sgca_insights')) || [];
             
-            if (items.length === 0) {
-                container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다.</p>';
+            if (!db) {
+                container.innerHTML = '<p style="text-align:center; color:#e74c3c; padding:40px 0;">js/firebase-init.js 파일에서 Firebase 설정(Config)을 입력해 주세요.</p>';
                 return;
             }
 
-            // 최신 3개만 잘라서 가져오기
-            const displayItems = items.slice(0, 3);
-            let html = '<div class="main-rss-grid">';
-            
-            displayItems.forEach(item => {
-                let dateStr = item.date;
-                if(dateStr && dateStr.includes('-')) {
-                    const parts = dateStr.split('-');
-                    dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
+            container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">최신 리포트를 불러오는 중입니다...</p>';
+
+            try {
+                // 최신 3개만 가져오기
+                const q = query(collection(db, "insights"), orderBy("date", "desc"), limit(3));
+                const querySnapshot = await getDocs(q);
+                
+                let displayItems = [];
+                querySnapshot.forEach((doc) => {
+                    displayItems.push({ id: doc.id, ...doc.data() });
+                });
+
+                if (displayItems.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다.</p>';
+                    return;
                 }
 
-                // 본문 텍스트가 너무 길면 적절히 자르기
-                const shortDesc = item.desc.length > 250 ? item.desc.substring(0, 250) + '...' : item.desc;
+                let html = '<div class="main-rss-grid">';
+                
+                displayItems.forEach(item => {
+                    let dateStr = item.date;
+                    if(dateStr && dateStr.includes('-')) {
+                        const parts = dateStr.split('-');
+                        dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
+                    }
 
-                html += `
-                    <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="main-rss-card">
-                        <div class="main-rss-content">
-                            <span class="main-rss-date">${dateStr}</span>
-                            <h3 class="main-rss-title">${item.title}</h3>
-                            <p class="main-rss-desc">${shortDesc}</p>
-                        </div>
-                    </a>
-                `;
-            });
-            
-            html += '</div>';
-            container.innerHTML = html;
+                    const shortDesc = item.desc.length > 250 ? item.desc.substring(0, 250) + '...' : item.desc;
+
+                    html += `
+                        <a href="${item.link}" target="_blank" rel="noopener noreferrer" class="main-rss-card">
+                            <div class="main-rss-content">
+                                <span class="main-rss-date">${dateStr}</span>
+                                <h3 class="main-rss-title">${item.title}</h3>
+                                <p class="main-rss-desc">${shortDesc}</p>
+                            </div>
+                        </a>
+                    `;
+                });
+                
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error("데이터 로드 실패: ", error);
+                container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+            }
         });
     </script>
 </body>
