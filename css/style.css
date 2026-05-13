@@ -1034,6 +1034,7 @@ nav {
         align-items: center;
         padding: 0 1rem;
         position: relative;
+        min-height: 80px;
     }
     
     nav {
@@ -1108,7 +1109,14 @@ nav {
     }
     
     .language-selector {
-        display: none;
+        display: flex;
+        margin-left: auto;
+        margin-right: 1rem;
+        order: 2;
+    }
+    .lang-btn {
+        padding: 4px 10px;
+        font-size: 0.75rem;
     }
 }
 
