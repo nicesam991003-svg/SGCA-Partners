@@ -36,9 +36,20 @@
                     <label>리포트 제목</label>
                     <input type="text" id="post-title" required placeholder="예: FDA 의료기기 사이버보안 최신 가이드라인 발표">
                 </div>
-                <div class="form-group">
-                    <label>작성 일자</label>
-                    <input type="date" id="post-date" required>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label>카테고리</label>
+                        <select id="post-category" required style="width: 100%; padding: 12px 15px; border: 1px solid #ddd; border-radius: 4px; font-family: inherit; font-size: 1rem;">
+                            <option value="">카테고리 선택</option>
+                            <option value="management-system">경영시스템인증</option>
+                            <option value="cyber-security">사이버보안</option>
+                            <option value="product-certification">제품인증</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>작성 일자</label>
+                        <input type="date" id="post-date" required>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>원문 링크 URL (선택사항)</label>
@@ -93,10 +104,20 @@
 
                 let html = '';
                 adminPosts.forEach(post => {
+                    let categoryLabel = '';
+                    switch(post.category) {
+                        case 'management-system': categoryLabel = '경영시스템인증'; break;
+                        case 'cyber-security': categoryLabel = '사이버보안'; break;
+                        case 'product-certification': categoryLabel = '제품인증'; break;
+                        default: categoryLabel = '미분류';
+                    }
                     html += `
                         <div class="admin-item">
                             <div class="admin-item-info">
-                                <h4>${post.title}</h4>
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                                    <span style="font-size:0.75rem; background:#f0f0f0; padding:2px 8px; border-radius:10px; color:#666;">${categoryLabel}</span>
+                                    <h4 style="margin:0;">${post.title}</h4>
+                                </div>
                                 <p>${post.date} &nbsp;|&nbsp; ${post.desc.substring(0, 40)}...</p>
                             </div>
                             <div style="white-space: nowrap;">
@@ -117,6 +138,7 @@
                         if (!post) return;
 
                         document.getElementById('post-title').value = post.title;
+                        document.getElementById('post-category').value = post.category || '';
                         document.getElementById('post-date').value = post.date;
                         document.getElementById('post-link').value = post.link === '#' ? '' : post.link;
                         document.getElementById('post-desc').value = post.desc;
@@ -194,6 +216,7 @@
                 }
 
                 const title = document.getElementById('post-title').value;
+                const category = document.getElementById('post-category').value;
                 const date = document.getElementById('post-date').value;
                 const link = document.getElementById('post-link').value || '#';
                 const desc = document.getElementById('post-desc').value;
@@ -208,7 +231,7 @@
                     if (editingId) {
                         // 기존 리포트 수정
                         await db.collection("insights").doc(editingId).update({
-                            title, date, link, desc, fullContent
+                            title, category, date, link, desc, fullContent
                         });
                         alert('인사이트 리포트가 성공적으로 수정되었습니다!');
                         editingId = null;
@@ -216,7 +239,7 @@
                     } else {
                         // 새 리포트 등록
                         await db.collection("insights").add({
-                            title, date, link, desc, fullContent, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            title, category, date, link, desc, fullContent, createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         alert('인사이트 리포트가 성공적으로 등록되었습니다!');
                     }
