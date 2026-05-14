@@ -25,14 +25,33 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   }
   // Smooth scroll for anchor links
-  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+  document.querySelectorAll('a[href*="#"]').forEach(anchor => {
     anchor.addEventListener('click', function (e) {
-      e.preventDefault();
-      const target = document.querySelector(this.getAttribute('href'));
-      if (target) {
-        target.scrollIntoView({
-          behavior: 'smooth'
-        });
+      const href = this.getAttribute('href');
+      const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+      
+      // Check if it's a link to an anchor on the current page
+      const isSamePageAnchor = href.startsWith('#') || 
+                               href.startsWith(currentPage + '#') ||
+                               (currentPage === 'index.html' && href.startsWith('./#'));
+
+      if (isSamePageAnchor) {
+          const targetId = href.split('#')[1];
+          const target = document.getElementById(targetId);
+          
+          if (target) {
+            e.preventDefault();
+            const headerHeight = window.innerWidth <= 992 ? 80 : 100;
+            const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 20;
+            
+            window.scrollTo({
+              top: targetPosition,
+              behavior: 'smooth'
+            });
+            
+            // Update URL hash without jump
+            history.pushState(null, null, '#' + targetId);
+          }
       }
     });
   });

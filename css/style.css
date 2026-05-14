@@ -3,6 +3,7 @@
 html {
   scroll-padding-top: 120px;
   overflow-x: hidden;
+  scroll-behavior: smooth;
 }
 
 /* Global Variables */
@@ -36,6 +37,7 @@ body {
   word-break: keep-all;
   overflow-wrap: break-word;
   overflow-x: hidden;
+  padding-top: 100px; /* Space for fixed navbar */
 }
 
 a {
@@ -100,8 +102,10 @@ p {
 .navbar {
   background-color: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   z-index: 1000;
   backdrop-filter: blur(10px);
@@ -1128,6 +1132,10 @@ nav {
     }
     .logo img {
         height: 50px !important;
+    }
+    
+    body {
+        padding-top: 80px; /* Adjusted space for mobile fixed navbar */
     }
 }
 
