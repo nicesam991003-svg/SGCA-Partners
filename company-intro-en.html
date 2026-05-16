@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="About SGCA Partners - Professional consulting firm for global regulations and cybersecurity in high-risk industries.">
+    <title>About Us | SGCA Partners</title>
+    <link rel="icon" type="image/svg+xml" href="images/logo.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .intro-hero {
+            background: linear-gradient(rgba(26, 37, 56, 0.85), rgba(26, 37, 56, 0.85)), url('images/machinery.png');
+            background-size: cover;
+            background-position: center;
+            padding: 120px 0 80px;
+            color: var(--color-crisp-white);
+            text-align: center;
+        }
+        .intro-hero h1 {
+            color: var(--color-crisp-white);
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            line-height: 1.2;
+        }
+        .intro-hero h1 span {
+            color: var(--color-accent);
+        }
+        .intro-hero p {
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.9);
+            max-width: 900px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        .competency-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2.5rem;
+            margin-top: 4rem;
+        }
+        .competency-card {
+            background: var(--color-crisp-white);
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            border: 1px solid #eee;
+            transition: transform 0.3s ease;
+        }
+        .competency-card:hover {
+            transform: translateY(-10px);
+        }
+        .competency-card h3 {
+            color: var(--color-accent);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .competency-card h3::before {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 24px;
+            background: var(--color-accent);
+        }
+        .sub-services {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+        }
+        .sub-service-item {
+            padding-left: 1.5rem;
+            position: relative;
+        }
+        .sub-service-item::before {
+            content: '•';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent);
+            font-weight: bold;
+        }
+        .sub-service-item strong {
+            display: block;
+            color: var(--color-deep-navy);
+            margin-bottom: 0.3rem;
+        }
+        .closing-quote {
+            background-color: #f4f7fa;
+            padding: 5rem 2rem;
+            text-align: center;
+            border-radius: 20px;
+            margin-top: 5rem;
+        }
+        .closing-quote blockquote {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: var(--color-deep-navy);
+            max-width: 1000px;
+            margin: 0 auto;
+            line-height: 1.5;
+            position: relative;
+        }
+        .closing-quote blockquote::before,
+        .closing-quote blockquote::after {
+            content: '"';
+            color: var(--color-accent);
+            font-size: 4rem;
+            position: absolute;
+            opacity: 0.3;
+        }
+        .closing-quote blockquote::before {
+            left: -40px;
+            top: -20px;
+        }
+        .closing-quote blockquote::after {
+            right: -40px;
+            bottom: -60px;
+        }
+        .closing-quote cite {
+            display: block;
+            margin-top: 2rem;
+            font-style: normal;
+            font-weight: 700;
+            color: var(--color-accent);
+            font-size: 1.2rem;
+        }
+
+        @media (max-width: 768px) {
+            .intro-hero h1 { font-size: 2rem; }
+            .intro-hero p { font-size: 1.05rem; }
+            .closing-quote blockquote { font-size: 1.3rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Navbar -->
+    <header class="navbar">
+        <div class="container">
+            <a href="index-en.html" class="logo">
+                <img src="images/logo.svg" alt="SGCA Partners" height="70">
+            </a>
+            <nav>
+                <ul class="nav-links">
+                    <li class="nav-item">
+                        <a href="company-intro-en.html" class="nav-link active no-drop">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="management-system-en.html" class="nav-link">Management Systems</a>
+                        <div class="dropdown-menu">
+                            <a href="management-system-en.html#iso9001" class="dropdown-link">ISO 9001 (Quality)</a>
+                            <a href="management-system-en.html#iso14001" class="dropdown-link">ISO 14001 (Environment)</a>
+                            <a href="management-system-en.html#iso45001" class="dropdown-link">ISO 45001 (Health & Safety)</a>
+                            <a href="management-system-en.html#iso13485" class="dropdown-link">ISO 13485 (Medical Devices)</a>
+                            <a href="management-system-en.html#iso19443" class="dropdown-link">ISO 19443 (Nuclear)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="product-certification-en.html" class="nav-link">Product Certification</a>
+                        <div class="dropdown-menu">
+                            <a href="product-certification-en.html#nrtl" class="dropdown-link">NRTL (North America)</a>
+                            <a href="product-certification-en.html#ce" class="dropdown-link">CE marking (Europe)</a>
+                            <a href="product-certification-en.html#kc" class="dropdown-link">KC Certification (Korea)</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="specialized-sectors-en.html" class="nav-link">Specialized Sectors</a>
+                        <div class="dropdown-menu">
+                            <a href="specialized-sectors-en.html#med-cybersec" class="dropdown-link">Medical Device Cybersecurity</a>
+                            <a href="specialized-sectors-en.html#field-eval" class="dropdown-link">Machinery Field Evaluation</a>
+                            <a href="specialized-sectors-en.html#ex-quality" class="dropdown-link">Ex-Proof Quality Systems</a>
+                            <a href="specialized-sectors-en.html#latest-cybersec" class="dropdown-link">Latest Cybersecurity Regulations</a>
+                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="insights-en.html" class="nav-link no-drop">Insights</a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="language-selector">
+                <a href="company-intro.html" class="lang-btn">KR</a> | 
+                <a href="company-intro-en.html" class="lang-btn active">EN</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="intro-hero">
+        <div class="container">
+            <h1>Global regulation and cybersecurity response for high-risk industries,<br><span>SGCA Partners presents the most reliable milestones.</span></h1>
+            <p>SGCA Partners (Smart Global Conformity Assessment Partners) is a professional conformity assessment consulting firm specializing in system and product certification, and global cybersecurity regulations in high-risk sectors such as medical devices, industrial machinery, and nuclear energy.</p>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-subtitle">Core Competencies</span>
+                <h2>Expertise & Services</h2>
+                <p>We provide optimal compliance solutions based on deep expertise and rich experience.</p>
+            </div>
+
+            <div class="competency-grid">
+                <!-- Competency 1 -->
+                <div class="competency-card">
+                    <h3>High-Risk Industry Expertise</h3>
+                    <p>We focus on high-risk industrial groups where technical complexity and safety are directly linked, providing differentiated solutions tailored to global regulatory trends.</p>
+                    <div class="sub-services">
+                        <div class="sub-service-item">
+                            <strong>Medical Devices</strong>
+                            EU MDR/IVDR, US FDA regulatory compliance and proactive cybersecurity framework construction for connected medical devices.
+                        </div>
+                        <div class="sub-service-item">
+                            <strong>Industrial Machinery</strong>
+                            Global safety standards (CE, NRTL, etc.) compliance and cybersecurity response for industrial control systems in smart manufacturing.
+                        </div>
+                        <div class="sub-service-item">
+                            <strong>Nuclear Energy</strong>
+                            Nuclear supply chain and system regulatory support requiring the highest level of quality assurance.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competency 2 -->
+                <div class="competency-card">
+                    <h3>Comprehensive Compliance</h3>
+                    <p>We provide an optimal integrated strategy that penetrates the entire process from system certification to global market entry.</p>
+                    <div class="sub-services">
+                        <div class="sub-service-item">
+                            <strong>Management Systems</strong>
+                            Support for global standards including ISO 9001, 14001, 45001, 13485, and ISO 19443.
+                        </div>
+                        <div class="sub-service-item">
+                            <strong>Integrated Strategy</strong>
+                            Comprehensive strategies for product certification and cybersecurity response across global markets.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Competency 3 -->
+                <div class="competency-card">
+                    <h3>Smart & Global Compliance</h3>
+                    <p>Based on rich experience and a global network, we simplify complex regulations to help clients settle in the global market quickly.</p>
+                    <div class="sub-services">
+                        <div class="sub-service-item">
+                            <strong>25+ Years of Experience</strong>
+                            Unique know-how and expertise accumulated through numerous successful projects.
+                        </div>
+                        <div class="sub-service-item">
+                            <strong>Global Network</strong>
+                            Partnerships that enable rapid resolution of demanding technical regulations and cybersecurity processes.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="closing-quote">
+                <blockquote>
+                    "In the midst of rapidly changing technical standards and cyber threats, regulatory response is not a barrier, but the best competitiveness to lead the global market. SGCA Partners will be a reliable partner so that clients' businesses can grow sustainably on global safety and security standards."
+                </blockquote>
+                <cite>SGCA Partners Team</cite>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-content">
+            <div class="footer-info">
+                <div class="footer-contact">
+                    <span class="contact-label">Phone</span>
+                    <span class="contact-value">+82-10-9231-9088</span>
+                    <span class="contact-label ms-3">Email</span>
+                    <span class="contact-value">sim@sgca-partners.com</span>
+                </div>
+                <div class="footer-details">
+                    <span>SGCA Partners</span> <span class="divider">|</span>
+                    <span>Business Reg No: 456-37-01417</span> <span class="divider">|</span>
+                    <span>Managing Partner: Sangwoo Sim</span>
+                </div>
+                <div class="footer-copyright">
+                    <p>Copyright &copy; SGCA Partners All Rights Reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

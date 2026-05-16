@@ -21,7 +21,6 @@ try {
     
     // Firestore 데이터베이스 참조 가져오기
     db = firebase.firestore();
-    console.log("Firebase가 초기화되었습니다.");
 } catch (error) {
     console.error("Firebase 초기화 중 오류 발생 (설정값을 확인해주세요): ", error);
 }

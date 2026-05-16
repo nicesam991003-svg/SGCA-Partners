@@ -57,13 +57,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Highlight active nav link based on current path
-  const currentPath = window.location.pathname.split('/').pop();
-  const navLinks = document.querySelectorAll('.nav-link');
+  const currentPath = window.location.pathname.split('/').pop() || 'index.html';
+  const navLinks = document.querySelectorAll('.nav-link, .dropdown-link');
   
   navLinks.forEach(link => {
-    const linkPath = link.getAttribute('href');
-    if (linkPath === currentPath || (currentPath === '' && linkPath === 'index.html')) {
+    const linkPath = link.getAttribute('href').split('#')[0]; // Remove anchor
+    if (linkPath === currentPath) {
       link.classList.add('active');
+      
+      // If it's a dropdown link, also highlight the parent nav-link
+      if (link.classList.contains('dropdown-link')) {
+        const parentNavLink = link.closest('.nav-item').querySelector('.nav-link');
+        if (parentNavLink) parentNavLink.classList.add('active');
+      }
     }
   });
 
