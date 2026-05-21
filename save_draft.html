@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Draft 저장 중...</title>
+</head>
+<body>
+<p id="status" style="font-family:sans-serif; font-size:1.1rem; padding:40px;">Firebase에 초안 리포트를 저장하는 중입니다...</p>
+
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAOOGNkjpW48SUkX7qZfE28hG-yLj4sMRI",
+  authDomain: "sgca-platform-7abbc.firebaseapp.com",
+  projectId: "sgca-platform-7abbc",
+  storageBucket: "sgca-platform-7abbc.firebasestorage.app",
+  messagingSenderId: "1076998535653",
+  appId: "1:1076998535653:web:286639c3d92a7cfb8f970c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const draftReport = {
+  status: "draft",
+  title: "ISO 14001:2026 공식 발행 — 환경경영시스템 표준 11년 만의 개정, 전 세계 인증기업 전환 시작",
+  category: "management-system",
+  date: "2026-05-26",
+  link: "https://www.tuvsud.com/en/newsroom/press-releases/2026/april/new-iso-14001-2026-now-published",
+  desc: "ISO가 2026년 4월 15일 환경경영시스템 표준 ISO 14001:2026을 공식 발행하며 ISO 14001:2015를 대체했다. 핵심 구조는 유지하되 기후변화 대응, 생애주기 사고, 용어 통일 등 명확성이 강화되었으며, 기존 인증기업은 2029년 5월까지 3년의 전환 기간 내에 새 버전으로 전환해야 한다.",
+  fullContent: `<h4>■ 개요</h4>
+<p>국제표준화기구(ISO)는 2026년 4월 15일 환경경영시스템(EMS) 국제표준인 ISO 14001:2026을 공식 발행했다. 이번 개정은 2015년 버전 발행 이후 11년 만의 전면 개정으로, 기존 ISO 14001:2015(2024년 기후변화 개정판 포함)를 공식 대체한다. TÜV SÜD, DNV, BSI, SGS 등 주요 국제 인증기관들은 즉시 전환 안내를 시작했으며, ANAB(미국) 역시 인정기관 차원의 지원 계획을 발표했다.</p>
+
+<h4>■ 주요 변경사항</h4>
+<ul>
+<li><strong>기후변화 대응 공식화:</strong> 2024년 별도 개정판으로 도입된 기후변화 요구사항(4.1조, 4.2조)이 본 표준에 통합. 조직은 기후 관련 리스크와 기회를 환경 경영에 명시적으로 반영해야 한다.</li>
+<li><strong>환경 측면의 확대:</strong> 생물다양성, 자원 보전, 생태계 보호 등 기존 대비 환경 측면의 범위가 확장되었다.</li>
+<li><strong>ISO 조화 구조(HS) 정렬:</strong> ISO 9001, ISO 45001 등 경영시스템 표준과 동일한 조화 구조(Harmonized Structure) 최신 버전으로 텍스트를 정비, 통합 경영시스템 구축이 더 수월해졌다.</li>
+<li><strong>전략적 방향성과의 연계 강화:</strong> 환경경영이 조직의 전략적 방향 및 비즈니스 의사결정과 어떻게 연계되어야 하는지에 대한 요구사항이 명확해졌다.</li>
+<li><strong>생애주기 사고(Life Cycle Thinking) 강조:</strong> 제품 및 서비스의 전 생애주기에 걸친 환경 영향 고려 요구사항이 강화되었다.</li>
+<li><strong>용어 및 표현 정비:</strong> "이행"을 "준수의무 충족"으로 변경하는 등 용어 일관성이 개선되었다.</li>
+</ul>
+
+<h4>■ 전환 일정 및 인증 효력</h4>
+<p>IAF(국제인정기구포럼) 의무문서 초안에 따라 전환 기간은 3년으로 설정되었다. ISO 14001:2015 기준의 현행 인증서는 2029년 5월까지 유효하며, 이후에는 ISO 14001:2026 기준의 인증서로 전환되어야 효력이 유지된다. 인증기관별 세부 전환 규정은 각 CB의 안내를 따른다.</p>
+
+<h4>■ ISO 9001 및 ISO 45001 개정 현황</h4>
+<p>ISO 9001:2026은 FDIS(최종국제표준초안)가 2026년 5~6월 중 발행될 예정이며, 최종 표준은 2026년 9월 발행이 목표다. 주요 변경 예정 사항으로는 품질 문화·윤리행동 강화, 리스크·기회 요구사항 강화, 변경관리 통합, 기후변화 반영, Annex A 확대 등이 포함된다. ISO 45001은 기술위원회(TC 283) 위원회 초안 단계로, 2027년 발행이 예상된다.</p>
+
+<h4>■ 시사점 및 대응 권고</h4>
+<p>현재 ISO 14001:2015 인증을 보유한 기업은 즉시 갭 분석(Gap Analysis)을 실시하고 전환 계획(로드맵)을 수립할 것이 권고된다. 특히 기후 리스크가 환경 측면 검토에 포함되는지 점검하고, 이해관계자 지도 및 조직 맥락 분석을 업데이트해야 한다. ISO 9001 및 ISO 45001과 통합 경영시스템을 운영하는 기업은 표준 간 조화 구조 정렬을 활용하여 효율적인 전환을 추진할 수 있다.</p>
+
+<p style="font-size:0.85em; color:#6c7a89; margin-top:16px;">※ 참고 출처: TÜV SÜD, DNV, BSI, SGS, ANAB, Certex International (2026년 4~5월)</p>`,
+  createdAt: firebase.firestore.FieldValue.serverTimestamp()
+};
+
+(async () => {
+  const el = document.getElementById('status');
+  try {
+    const docRef = await db.collection("insights").add(draftReport);
+    el.innerHTML = `✅ 저장 완료!<br><br>문서 ID: <code>${docRef.id}</code><br><br>
+      <a href="insights.html" style="color:#1a73e8;">→ 인사이트 페이지에서 확인하기</a>`;
+  } catch(e) {
+    el.innerHTML = `❌ 저장 실패: ${e.message}`;
+    console.error(e);
+  }
+})();
+</script>
+</body>
+</html>
