@@ -1,0 +1,33 @@
+name: Weekly Insight Draft Generator
+
+on:
+  schedule:
+    # 매주 월요일 KST 07:00 = UTC 일요일 22:00
+    - cron: '0 22 * * 0'
+  workflow_dispatch:
+    # 수동 실행도 가능 (테스트용)
+
+jobs:
+  generate-insight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Generate and save draft insight
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
+        run: node scripts/generate-insight.js
