@@ -241,9 +241,9 @@
                                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
                                     Publish
                                 </button>
-                                <button class="btn-admin-edit" onclick="location.href='admin.html?edit=${item.id}'">
+                                <button class="btn-admin-edit" onclick="openDraftPreview('${item.id}')">
                                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                                    Edit
+                                    Preview·Edit
                                 </button>
                                 <button class="btn-admin-delete" onclick="deleteReport('${item.id}', 'draft')">
                                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
@@ -333,6 +333,45 @@
                     if (!str) return '';
                     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                 }
+
+                // ── Draft Preview Modal ──
+                function openDraftPreview(id) {
+                    const item = allDrafts.find(d => d.id === id);
+                    if (!item) return;
+
+                    document.getElementById('draftPreviewDate').textContent = formatDate(item.date);
+                    document.getElementById('draftPreviewCat').textContent = getCategoryLabel(item.category);
+                    document.getElementById('draftPreviewTitle').textContent = item.title || '';
+                    document.getElementById('draftPreviewDesc').textContent = item.desc || '';
+                    document.getElementById('draftPreviewBody').innerHTML = item.fullContent || item.desc || '';
+
+                    const linkEl = document.getElementById('draftPreviewLink');
+                    if (item.link && item.link !== '#') {
+                        linkEl.href = item.link;
+                        linkEl.style.display = 'inline-block';
+                    } else {
+                        linkEl.style.display = 'none';
+                    }
+
+                    document.getElementById('draftPreviewPublishBtn').onclick = () => {
+                        closeDraftPreview();
+                        publishDraft(id);
+                    };
+                    document.getElementById('draftPreviewEditBtn').onclick = () => {
+                        location.href = 'admin.html?edit=' + id;
+                    };
+
+                    document.getElementById('draftPreviewModal').style.display = 'flex';
+                }
+
+                function closeDraftPreview() {
+                    document.getElementById('draftPreviewModal').style.display = 'none';
+                }
+
+                window.addEventListener('click', function(e) {
+                    const modal = document.getElementById('draftPreviewModal');
+                    if (e.target === modal) closeDraftPreview();
+                });
             </script>
         </div>
     </section>
@@ -357,6 +396,40 @@
             </div>
         </div>
     </footer>
+
+    <!-- Draft Preview Modal -->
+    <div id="draftPreviewModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; border-radius:12px; max-width:780px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 24px; border-bottom:1px solid #e5e7eb; position:sticky; top:0; background:#fff; z-index:1;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="background:#fef3c7; color:#92400e; font-size:0.78rem; font-weight:600; padding:3px 10px; border-radius:20px; border:1px solid #fcd34d;">Draft Report</span>
+                    <span id="draftPreviewCat" style="background:#eeedfe; color:#3c3489; font-size:0.78rem; font-weight:600; padding:3px 10px; border-radius:20px;"></span>
+                </div>
+                <button onclick="closeDraftPreview()" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#6c7a89; line-height:1;">&times;</button>
+            </div>
+            <div style="padding:24px;">
+                <div style="font-size:0.85rem; color:#6c7a89; margin-bottom:8px;" id="draftPreviewDate"></div>
+                <h2 id="draftPreviewTitle" style="font-size:1.2rem; font-weight:700; color:var(--color-deep-navy); margin:0 0 16px; line-height:1.5;"></h2>
+                <div style="background:#f8f9fa; border-left:3px solid #534ab7; border-radius:0 6px 6px 0; padding:12px 14px; margin-bottom:20px;">
+                    <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Summary</div>
+                    <p id="draftPreviewDesc" style="font-size:0.9rem; color:#374151; line-height:1.6; margin:0;"></p>
+                </div>
+                <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em;">Full Content</div>
+                <div id="draftPreviewBody" style="font-size:0.9rem; color:#374151; line-height:1.75; border:1px solid #e5e7eb; border-radius:8px; padding:16px;"></div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-top:1px solid #e5e7eb; background:#f9fafb; border-radius:0 0 12px 12px; position:sticky; bottom:0;">
+                <div style="display:flex; gap:10px;">
+                    <a id="draftPreviewLink" href="#" target="_blank" style="display:none; padding:8px 16px; border-radius:6px; border:1.5px solid #6c7a89; color:#6c7a89; font-size:0.85rem; font-weight:600; text-decoration:none;">View Source ↗</a>
+                    <button id="draftPreviewEditBtn" style="padding:8px 16px; border-radius:6px; border:1.5px solid var(--color-deep-navy); background:transparent; color:var(--color-deep-navy); font-size:0.85rem; font-weight:600; cursor:pointer;">
+                        ✏️ Edit in Admin
+                    </button>
+                </div>
+                <button id="draftPreviewPublishBtn" style="padding:9px 24px; border-radius:6px; border:none; background:#10b981; color:#fff; font-size:0.9rem; font-weight:700; cursor:pointer;">
+                    ✅ Publish This Report
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Insight Modal -->
     <div id="insightModal" class="insight-modal">
