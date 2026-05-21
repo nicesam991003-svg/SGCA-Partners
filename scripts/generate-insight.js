@@ -10,11 +10,10 @@ const https = require('https');
 // 1. 환경변수 확인
 // ─────────────────────────────────────────
 const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
-const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
-if (!ANTHROPIC_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID) {
-  console.error('❌ 필수 환경변수 누락: ANTHROPIC_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
+if (!ANTHROPIC_API_KEY || !FIREBASE_PROJECT_ID || !process.env.FIREBASE_SERVICE_ACCOUNT) {
+  console.error('❌ 필수 환경변수 누락: ANTHROPIC_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT');
   process.exit(1);
 }
 
@@ -297,33 +296,64 @@ fullContent HTML 구조:
 }
 
 // ─────────────────────────────────────────
-// 6. Firebase 익명 토큰 획득 (1회 재사용)
+// 6. 서비스 계정 JWT로 Google OAuth2 토큰 획득
 // ─────────────────────────────────────────
-async function getFirebaseToken() {
-  const res = await httpsPost(
-    'identitytoolkit.googleapis.com',
-    `/v1/accounts:signInAnonymously?key=${FIREBASE_API_KEY}`,
-    {},
-    { returnSecureToken: true }
-  );
-  if (res.status !== 200) {
-    throw new Error(`Firebase 익명 로그인 실패 (${res.status}): ${JSON.stringify(res.body)}`);
+async function getServiceAccountToken() {
+  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (!serviceAccountJson) {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않았습니다.');
   }
-  return res.body.idToken;
+
+  const sa = JSON.parse(serviceAccountJson);
+  const now = Math.floor(Date.now() / 1000);
+
+  // JWT Header + Payload
+  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({
+    iss: sa.client_email,
+    sub: sa.client_email,
+    aud: 'https://oauth2.googleapis.com/token',
+    iat: now,
+    exp: now + 3600,
+    scope: 'https://www.googleapis.com/auth/datastore'
+  })).toString('base64url');
+
+  // RS256 서명 (Node.js 내장 crypto)
+  const crypto = require('crypto');
+  const sign   = crypto.createSign('RSA-SHA256');
+  sign.update(`${header}.${payload}`);
+  const signature = sign.sign(sa.private_key, 'base64url');
+  const jwt = `${header}.${payload}.${signature}`;
+
+  // Google OAuth2 토큰 교환
+  const tokenRes = await httpsPost(
+    'oauth2.googleapis.com',
+    '/token',
+    {},
+    {
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    }
+  );
+
+  if (tokenRes.status !== 200) {
+    throw new Error(`OAuth2 토큰 획득 실패 (${tokenRes.status}): ${JSON.stringify(tokenRes.body)}`);
+  }
+  return tokenRes.body.access_token;
 }
 
 // ─────────────────────────────────────────
 // 7. Firestore에 단일 리포트 저장
 // ─────────────────────────────────────────
-async function saveToFirestore(report, idToken) {
+async function saveToFirestore(report, accessToken) {
   const doc = {
     fields: {
-      title:       { stringValue: report.title },
-      category:    { stringValue: report.category },
-      date:        { stringValue: report.date },
-      link:        { stringValue: report.link || '#' },
-      desc:        { stringValue: report.desc },
-      fullContent: { stringValue: report.fullContent },
+      title:       { stringValue: report.title       || '' },
+      category:    { stringValue: report.category    || '' },
+      date:        { stringValue: report.date        || '' },
+      link:        { stringValue: report.link        || '#' },
+      desc:        { stringValue: report.desc        || '' },
+      fullContent: { stringValue: report.fullContent || '' },
       status:      { stringValue: 'draft' },
       createdAt:   { stringValue: new Date().toISOString() }
     }
@@ -339,7 +369,7 @@ async function saveToFirestore(report, idToken) {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(data),
-          'Authorization': `Bearer ${idToken}`
+          'Authorization': `Bearer ${accessToken}`
         }
       },
       (r) => {
@@ -349,9 +379,8 @@ async function saveToFirestore(report, idToken) {
           try {
             resolve({ status: r.statusCode, body: JSON.parse(raw) });
           } catch (e) {
-            // HTML 오류 페이지 등 JSON 파싱 불가 시
-            console.error('Firestore 응답 파싱 실패 (원본):', raw.slice(0, 200));
-            resolve({ status: r.statusCode, body: { error: raw.slice(0, 200) } });
+            console.error('Firestore 응답 파싱 실패 (원본):', raw.slice(0, 300));
+            resolve({ status: r.statusCode, body: { error: raw.slice(0, 300) } });
           }
         });
       }
@@ -364,7 +393,7 @@ async function saveToFirestore(report, idToken) {
   if (res.status !== 200) {
     throw new Error(`Firestore 저장 실패 (${res.status}): ${JSON.stringify(res.body)}`);
   }
-  return res.body.name.split('/').pop(); // 문서 ID 반환
+  return res.body.name.split('/').pop();
 }
 
 // ─────────────────────────────────────────
@@ -385,14 +414,24 @@ function sleep(ms) {
   const today = getTodayKST();
   console.log(`📅 기준 날짜 (KST): ${today}`);
 
+  // 서비스 계정 토큰 1회 획득 (3건 모두 재사용)
+  let accessToken;
+  try {
+    console.log('\n🔑 Firebase 서비스 계정 인증 중...');
+    accessToken = await getServiceAccountToken();
+    console.log('  ✅ 인증 성공');
+  } catch (e) {
+    console.error(`  ❌ Firebase 인증 실패: ${e.message}`);
+    process.exit(1);
+  }
+
   const results = [];
   const errors  = [];
 
   // ── 경영시스템인증 리포트 생성 ──
   try {
     const report = await generateManagementReport(today);
-    const token  = await getFirebaseToken();
-    const docId  = await saveToFirestore(report, token);
+    const docId  = await saveToFirestore(report, accessToken);
     results.push({ label: '경영시스템인증', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
@@ -400,15 +439,14 @@ function sleep(ms) {
     errors.push('경영시스템인증');
   }
 
-  // Rate limit 방지: 90초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 90초 대기 중...');
-  await sleep(90000);
+  // Rate limit 방지: 120초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 120초 대기 중...');
+  await sleep(120000);
 
   // ── 사이버보안 리포트 생성 ──
   try {
     const report = await generateCyberSecurityReport(today);
-    const token  = await getFirebaseToken();
-    const docId  = await saveToFirestore(report, token);
+    const docId  = await saveToFirestore(report, accessToken);
     results.push({ label: '사이버보안', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
@@ -416,15 +454,14 @@ function sleep(ms) {
     errors.push('사이버보안');
   }
 
-  // Rate limit 방지: 90초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 90초 대기 중...');
-  await sleep(90000);
+  // Rate limit 방지: 120초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 120초 대기 중...');
+  await sleep(120000);
 
   // ── 제품인증 리포트 생성 ──
   try {
     const report = await generateProductCertReport(today);
-    const token  = await getFirebaseToken();
-    const docId  = await saveToFirestore(report, token);
+    const docId  = await saveToFirestore(report, accessToken);
     results.push({ label: '제품인증', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
