@@ -397,9 +397,9 @@ function sleep(ms) {
     errors.push('사이버보안');
   }
 
-  // Rate limit 방지: 120초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 120초 대기 중...');
-  await sleep(120000);
+  // Rate limit 방지: 180초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 180초 대기 중...');
+  await sleep(180000);
 
   // ── 제품인증 리포트 생성 ──
   try {
