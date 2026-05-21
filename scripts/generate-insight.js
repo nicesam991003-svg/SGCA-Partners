@@ -87,14 +87,18 @@ async function callAnthropic(systemPrompt, userPrompt) {
   }
   if (!jsonText) throw new Error('Anthropic 응답에서 텍스트 블록을 찾을 수 없습니다.');
 
-  // 마크다운 코드블록 제거 후 JSON 파싱
-  const cleaned = jsonText
-    .replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim();
+  // JSON 객체만 추출 (앞뒤 설명 텍스트·마크다운 코드블록 모두 제거)
+  const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    console.error('── 원본 응답 (JSON 없음) ──\n', jsonText.slice(0, 500));
+    throw new Error('응답에서 JSON 객체를 찾을 수 없습니다.');
+  }
+  const extracted = jsonMatch[0];
 
   try {
-    return JSON.parse(cleaned);
+    return JSON.parse(extracted);
   } catch (e) {
-    console.error('── 원본 응답 (파싱 실패) ──\n', jsonText.slice(0, 500));
+    console.error('── 원본 응답 (파싱 실패) ──\n', extracted.slice(0, 500));
     throw new Error(`JSON 파싱 실패: ${e.message}`);
   }
 }
@@ -322,7 +326,14 @@ async function saveToFirestore(report, idToken) {
 }
 
 // ─────────────────────────────────────────
-// 8. 메인 실행
+// 8. 대기 유틸
+// ─────────────────────────────────────────
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ─────────────────────────────────────────
+// 9. 메인 실행
 // ─────────────────────────────────────────
 (async () => {
   console.log('╔══════════════════════════════════════════╗');
@@ -347,6 +358,10 @@ async function saveToFirestore(report, idToken) {
     errors.push('경영시스템인증');
   }
 
+  // Rate limit 방지: 60초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 60초 대기 중...');
+  await sleep(60000);
+
   // ── 사이버보안 리포트 생성 ──
   try {
     const report = await generateCyberSecurityReport(today);
@@ -358,6 +373,10 @@ async function saveToFirestore(report, idToken) {
     console.error(`  ❌ 사이버보안 실패: ${e.message}`);
     errors.push('사이버보안');
   }
+
+  // Rate limit 방지: 60초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 60초 대기 중...');
+  await sleep(60000);
 
   // ── 제품인증 리포트 생성 ──
   try {
