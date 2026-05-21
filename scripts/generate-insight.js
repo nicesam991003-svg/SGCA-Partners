@@ -88,19 +88,53 @@ async function callAnthropic(systemPrompt, userPrompt) {
   if (!jsonText) throw new Error('Anthropic 응답에서 텍스트 블록을 찾을 수 없습니다.');
 
   // JSON 객체만 추출 (앞뒤 설명 텍스트·마크다운 코드블록 모두 제거)
+  // fullContent의 HTML이 JSON을 깨뜨리는 경우를 방지하기 위해
+  // fullContent 필드를 임시 플레이스홀더로 치환 후 파싱
   const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
     console.error('── 원본 응답 (JSON 없음) ──\n', jsonText.slice(0, 500));
     throw new Error('응답에서 JSON 객체를 찾을 수 없습니다.');
   }
-  const extracted = jsonMatch[0];
+  let extracted = jsonMatch[0];
 
-  try {
-    return JSON.parse(extracted);
-  } catch (e) {
-    console.error('── 원본 응답 (파싱 실패) ──\n', extracted.slice(0, 500));
-    throw new Error(`JSON 파싱 실패: ${e.message}`);
+  // fullContent 값을 별도로 추출 (HTML이 JSON 파싱을 방해하므로)
+  let fullContent = '';
+  const fcMatch = extracted.match(/"fullContent"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"\w+"|}\s*$)/);
+  if (fcMatch) {
+    fullContent = fcMatch[1]
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+    // fullContent를 안전한 플레이스홀더로 치환
+    extracted = extracted.replace(/"fullContent"\s*:\s*"[\s\S]*?"(\s*(?:,\s*"\w+"|}\s*$))/, `"fullContent":"__PLACEHOLDER__"$1`);
   }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(extracted);
+  } catch (e) {
+    // 파싱 실패 시 정규식으로 각 필드 개별 추출
+    console.warn('JSON 직접 파싱 실패, 필드별 추출 시도...');
+    parsed = {};
+    const fields = ['title','category','date','link','desc'];
+    fields.forEach(f => {
+      const m = jsonText.match(new RegExp(`"${f}"\\s*:\\s*"([^"]*?)"`));
+      if (m) parsed[f] = m[1];
+    });
+  }
+
+  // fullContent 복원
+  if (fullContent) {
+    parsed.fullContent = fullContent;
+  } else {
+    // 플레이스홀더 없이 fullContent 별도 추출 시도
+    const fcMatch2 = jsonText.match(/"fullContent"\s*:\s*"([\s\S]*?)(?="(?:title|category|date|link|desc|status|createdAt)"|\}\s*$)/);
+    if (fcMatch2) {
+      parsed.fullContent = fcMatch2[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/",?\s*$/, '');
+    }
+  }
+
+  return parsed;
 }
 
 // ─────────────────────────────────────────
@@ -311,7 +345,15 @@ async function saveToFirestore(report, idToken) {
       (r) => {
         let raw = '';
         r.on('data', c => raw += c);
-        r.on('end', () => resolve({ status: r.statusCode, body: JSON.parse(raw) }));
+        r.on('end', () => {
+          try {
+            resolve({ status: r.statusCode, body: JSON.parse(raw) });
+          } catch (e) {
+            // HTML 오류 페이지 등 JSON 파싱 불가 시
+            console.error('Firestore 응답 파싱 실패 (원본):', raw.slice(0, 200));
+            resolve({ status: r.statusCode, body: { error: raw.slice(0, 200) } });
+          }
+        });
       }
     );
     req.on('error', reject);
@@ -358,9 +400,9 @@ function sleep(ms) {
     errors.push('경영시스템인증');
   }
 
-  // Rate limit 방지: 60초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 60초 대기 중...');
-  await sleep(60000);
+  // Rate limit 방지: 90초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 90초 대기 중...');
+  await sleep(90000);
 
   // ── 사이버보안 리포트 생성 ──
   try {
@@ -374,9 +416,9 @@ function sleep(ms) {
     errors.push('사이버보안');
   }
 
-  // Rate limit 방지: 60초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 60초 대기 중...');
-  await sleep(60000);
+  // Rate limit 방지: 90초 대기
+  console.log('\n⏳ Rate limit 방지를 위해 90초 대기 중...');
+  await sleep(90000);
 
   // ── 제품인증 리포트 생성 ──
   try {
