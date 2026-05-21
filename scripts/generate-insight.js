@@ -10,10 +10,11 @@ const https = require('https');
 // 1. 환경변수 확인
 // ─────────────────────────────────────────
 const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
+const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
-if (!ANTHROPIC_API_KEY || !FIREBASE_PROJECT_ID || !process.env.FIREBASE_SERVICE_ACCOUNT) {
-  console.error('❌ 필수 환경변수 누락: ANTHROPIC_API_KEY, FIREBASE_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT');
+if (!ANTHROPIC_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID) {
+  console.error('❌ 필수 환경변수 누락: ANTHROPIC_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
   process.exit(1);
 }
 
@@ -296,56 +297,25 @@ fullContent HTML 구조:
 }
 
 // ─────────────────────────────────────────
-// 6. 서비스 계정 JWT로 Google OAuth2 토큰 획득
+// 6. Firebase 익명 인증 토큰 획득
 // ─────────────────────────────────────────
-async function getServiceAccountToken() {
-  const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (!serviceAccountJson) {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT 환경변수가 설정되지 않았습니다.');
-  }
-
-  const sa = JSON.parse(serviceAccountJson);
-  const now = Math.floor(Date.now() / 1000);
-
-  // JWT Header + Payload
-  const header  = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({
-    iss: sa.client_email,
-    sub: sa.client_email,
-    aud: 'https://oauth2.googleapis.com/token',
-    iat: now,
-    exp: now + 3600,
-    scope: 'https://www.googleapis.com/auth/datastore'
-  })).toString('base64url');
-
-  // RS256 서명 (Node.js 내장 crypto)
-  const crypto = require('crypto');
-  const sign   = crypto.createSign('RSA-SHA256');
-  sign.update(`${header}.${payload}`);
-  const signature = sign.sign(sa.private_key, 'base64url');
-  const jwt = `${header}.${payload}.${signature}`;
-
-  // Google OAuth2 토큰 교환
-  const tokenRes = await httpsPost(
-    'oauth2.googleapis.com',
-    '/token',
+async function getFirebaseToken() {
+  const res = await httpsPost(
+    'identitytoolkit.googleapis.com',
+    `/v1/accounts:signInAnonymously?key=${FIREBASE_API_KEY}`,
     {},
-    {
-      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-      assertion: jwt
-    }
+    { returnSecureToken: true }
   );
-
-  if (tokenRes.status !== 200) {
-    throw new Error(`OAuth2 토큰 획득 실패 (${tokenRes.status}): ${JSON.stringify(tokenRes.body)}`);
+  if (res.status !== 200) {
+    throw new Error(`Firebase 익명 로그인 실패 (${res.status}): ${JSON.stringify(res.body)}`);
   }
-  return tokenRes.body.access_token;
+  return res.body.idToken;
 }
 
 // ─────────────────────────────────────────
 // 7. Firestore에 단일 리포트 저장
 // ─────────────────────────────────────────
-async function saveToFirestore(report, accessToken) {
+async function saveToFirestore(report, idToken) {
   const doc = {
     fields: {
       title:       { stringValue: report.title       || '' },
@@ -369,7 +339,7 @@ async function saveToFirestore(report, accessToken) {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(data),
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${idToken}`
         }
       },
       (r) => {
@@ -414,11 +384,11 @@ function sleep(ms) {
   const today = getTodayKST();
   console.log(`📅 기준 날짜 (KST): ${today}`);
 
-  // 서비스 계정 토큰 1회 획득 (3건 모두 재사용)
-  let accessToken;
+  // 익명 인증 토큰 1회 획득 (3건 모두 재사용)
+  let firebaseToken;
   try {
-    console.log('\n🔑 Firebase 서비스 계정 인증 중...');
-    accessToken = await getServiceAccountToken();
+    console.log('\n🔑 Firebase 익명 인증 중...');
+    firebaseToken = await getFirebaseToken();
     console.log('  ✅ 인증 성공');
   } catch (e) {
     console.error(`  ❌ Firebase 인증 실패: ${e.message}`);
@@ -431,7 +401,7 @@ function sleep(ms) {
   // ── 경영시스템인증 리포트 생성 ──
   try {
     const report = await generateManagementReport(today);
-    const docId  = await saveToFirestore(report, accessToken);
+    const docId  = await saveToFirestore(report, firebaseToken);
     results.push({ label: '경영시스템인증', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
@@ -446,7 +416,7 @@ function sleep(ms) {
   // ── 사이버보안 리포트 생성 ──
   try {
     const report = await generateCyberSecurityReport(today);
-    const docId  = await saveToFirestore(report, accessToken);
+    const docId  = await saveToFirestore(report, firebaseToken);
     results.push({ label: '사이버보안', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
@@ -461,7 +431,7 @@ function sleep(ms) {
   // ── 제품인증 리포트 생성 ──
   try {
     const report = await generateProductCertReport(today);
-    const docId  = await saveToFirestore(report, accessToken);
+    const docId  = await saveToFirestore(report, firebaseToken);
     results.push({ label: '제품인증', title: report.title, docId });
     console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
   } catch (e) {
