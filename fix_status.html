@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Firebase status 필드 일괄 수정</title>
+</head>
+<body>
+<h2 style="font-family:sans-serif; padding:20px;">Firebase status 필드 일괄 수정 중...</h2>
+<pre id="log" style="font-family:monospace; padding:20px; background:#f4f4f4; margin:20px; border-radius:8px;"></pre>
+
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyAOOGNkjpW48SUkX7qZfE28hG-yLj4sMRI",
+  authDomain: "sgca-platform-7abbc.firebaseapp.com",
+  projectId: "sgca-platform-7abbc",
+  storageBucket: "sgca-platform-7abbc.firebasestorage.app",
+  messagingSenderId: "1076998535653",
+  appId: "1:1076998535653:web:286639c3d92a7cfb8f970c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+const log = document.getElementById('log');
+function addLog(msg) {
+  log.textContent += msg + '\n';
+}
+
+(async () => {
+  try {
+    addLog('📋 insights 컬렉션 전체 조회 중...');
+    const snap = await db.collection('insights').get();
+    addLog(`총 ${snap.size}개 문서 발견`);
+
+    let fixCount = 0;
+    let skipCount = 0;
+    const batch = db.batch();
+
+    snap.forEach(doc => {
+      const data = doc.data();
+      if (!data.status) {
+        // status 필드가 없는 문서 → draft로 설정
+        batch.update(doc.ref, { status: 'draft' });
+        addLog(`  → [수정] ${doc.id}: status 없음 → draft 설정`);
+        fixCount++;
+      } else {
+        addLog(`  → [유지] ${doc.id}: status = "${data.status}"`);
+        skipCount++;
+      }
+    });
+
+    if (fixCount > 0) {
+      await batch.commit();
+      addLog(`\n✅ 완료! ${fixCount}개 문서에 status: "draft" 추가, ${skipCount}개 유지`);
+    } else {
+      addLog(`\n✅ 수정 필요한 문서 없음. 모든 문서에 status 필드 있음.`);
+    }
+
+    addLog('\n→ 이 페이지를 닫고 insights.html에서 관리자 모드로 확인하세요.');
+    addLog('→ 작업 완료 후 GitHub에서 fix_status.html 파일을 삭제하세요.');
+
+  } catch(e) {
+    addLog(`❌ 오류: ${e.message}`);
+  }
+})();
+</script>
+</body>
+</html>
