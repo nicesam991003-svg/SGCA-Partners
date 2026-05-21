@@ -86,15 +86,252 @@
                     Register New Report (Admin)
                 </button>
             </div>
-            
+
+            <!-- ★ Draft Reports Section (visible after admin login) -->
+            <div id="draft-section" style="display:none; margin-top: 48px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
+                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">Draft Reports</h2>
+                    </div>
+                    <span id="draft-count-badge" style="background:#fef3c7; color:#92400e; font-size:0.78rem; font-weight:600; padding:2px 10px; border-radius:20px; border:1px solid #fcd34d;"></span>
+                    <span style="font-size:0.85rem; color:#6c7a89; margin-left:4px;">Not yet published. Review and publish when ready.</span>
+                </div>
+                <div id="draft-feed-container">
+                    <div class="loading-text">Loading draft reports...</div>
+                </div>
+            </div>
+
+            <!-- ★ Published Reports Management Section (visible after admin login) -->
+            <div id="published-manage-section" style="display:none; margin-top: 48px;">
+                <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981;"></span>
+                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">Published Reports</h2>
+                    </div>
+                    <span id="published-count-badge" style="background:#d1fae5; color:#065f46; font-size:0.78rem; font-weight:600; padding:2px 10px; border-radius:20px; border:1px solid #6ee7b7;"></span>
+                </div>
+                <div id="published-manage-container">
+                    <div class="loading-text">Loading published reports...</div>
+                </div>
+            </div>
+
+            <style>
+                .admin-report-row {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 16px;
+                    background: #fff;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 8px;
+                    padding: 16px 20px;
+                    margin-bottom: 12px;
+                    transition: box-shadow 0.15s;
+                }
+                .admin-report-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+                .admin-report-row.draft-row { border-left: 4px solid #f59e0b; background: #fffbeb; }
+                .admin-report-row.published-row { border-left: 4px solid #10b981; }
+                .admin-row-info { flex: 1; min-width: 0; }
+                .admin-row-title { font-size: 0.97rem; font-weight: 600; color: var(--color-deep-navy); margin: 0 0 6px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+                .admin-row-meta { font-size: 0.82rem; color: #6c7a89; display: flex; gap: 12px; flex-wrap: wrap; }
+                .admin-row-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+                .btn-admin-edit {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    padding: 6px 14px; border-radius: 4px; font-size: 0.83rem; font-weight: 600; cursor: pointer;
+                    border: 1.5px solid var(--color-deep-navy); background: transparent; color: var(--color-deep-navy);
+                    transition: all 0.15s;
+                }
+                .btn-admin-edit:hover { background: var(--color-deep-navy); color: #fff; }
+                .btn-admin-publish {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    padding: 6px 14px; border-radius: 4px; font-size: 0.83rem; font-weight: 600; cursor: pointer;
+                    border: 1.5px solid #10b981; background: #10b981; color: #fff;
+                    transition: all 0.15s;
+                }
+                .btn-admin-publish:hover { background: #059669; border-color: #059669; }
+                .btn-admin-delete {
+                    display: inline-flex; align-items: center; gap: 5px;
+                    padding: 6px 14px; border-radius: 4px; font-size: 0.83rem; font-weight: 600; cursor: pointer;
+                    border: 1.5px solid #e74c3c; background: transparent; color: #e74c3c;
+                    transition: all 0.15s;
+                }
+                .btn-admin-delete:hover { background: #e74c3c; color: #fff; }
+            </style>
+
             <script>
+                let isAdminMode = false;
+                let allDrafts = [];
+                let allPublished = [];
+
                 function checkAdminPassword() {
                     const pwd = prompt("Admin privileges required.\nPlease enter password.");
                     if (pwd === "banana147!") {
-                        window.location.href = "admin.html";
+                        isAdminMode = true;
+                        loadAdminSections();
                     } else if (pwd !== null) {
                         alert("Incorrect password.");
                     }
+                }
+
+                function getCategoryLabel(cat) {
+                    switch(cat) {
+                        case 'management-system': return 'Management Systems';
+                        case 'cyber-security': return 'Cybersecurity';
+                        case 'product-certification': return 'Product Cert.';
+                        default: return 'Other';
+                    }
+                }
+
+                function formatDate(dateStr) {
+                    if (!dateStr) return '';
+                    if (dateStr.includes('-')) {
+                        const p = dateStr.split('-');
+                        return `${p[0]}. ${p[1]}. ${p[2]}.`;
+                    }
+                    return dateStr;
+                }
+
+                async function loadAdminSections() {
+                    if (!db) { alert("Firebase is not connected."); return; }
+
+                    document.getElementById('draft-section').style.display = 'block';
+                    document.getElementById('published-manage-section').style.display = 'block';
+
+                    try {
+                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        allDrafts = [];
+                        allPublished = [];
+                        snap.forEach(doc => {
+                            const d = { id: doc.id, ...doc.data() };
+                            if (d.status === 'draft') allDrafts.push(d);
+                            else allPublished.push(d);
+                        });
+                        renderDraftSection();
+                        renderPublishedManageSection();
+                    } catch(e) {
+                        console.error(e);
+                        document.getElementById('draft-feed-container').innerHTML = '<p style="color:#e74c3c;">Failed to load data. Check console.</p>';
+                    }
+                }
+
+                function renderDraftSection() {
+                    const badge = document.getElementById('draft-count-badge');
+                    badge.textContent = `${allDrafts.length} item(s)`;
+                    const container = document.getElementById('draft-feed-container');
+                    if (allDrafts.length === 0) {
+                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">No draft reports.</p>';
+                        return;
+                    }
+                    let html = '';
+                    allDrafts.forEach(item => {
+                        const shortDesc = (item.desc || '').length > 120 ? item.desc.substring(0, 120) + '…' : (item.desc || '');
+                        html += `
+                        <div class="admin-report-row draft-row">
+                            <div class="admin-row-info">
+                                <p class="admin-row-title" title="${escHtml(item.title)}">${escHtml(item.title)}</p>
+                                <div class="admin-row-meta">
+                                    <span>📅 ${formatDate(item.date)}</span>
+                                    <span>🏷 ${getCategoryLabel(item.category)}</span>
+                                    <span style="color:#f59e0b; font-weight:600;">● Draft</span>
+                                </div>
+                                <p style="font-size:0.83rem; color:#6c7a89; margin:6px 0 0; line-height:1.5;">${escHtml(shortDesc)}</p>
+                            </div>
+                            <div class="admin-row-actions">
+                                <button class="btn-admin-publish" onclick="publishDraft('${item.id}')">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                                    Publish
+                                </button>
+                                <button class="btn-admin-edit" onclick="location.href='admin.html?edit=${item.id}'">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit
+                                </button>
+                                <button class="btn-admin-delete" onclick="deleteReport('${item.id}', 'draft')">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+
+                function renderPublishedManageSection() {
+                    const badge = document.getElementById('published-count-badge');
+                    badge.textContent = `${allPublished.length} item(s)`;
+                    const container = document.getElementById('published-manage-container');
+                    if (allPublished.length === 0) {
+                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">No published reports.</p>';
+                        return;
+                    }
+                    let html = '';
+                    allPublished.forEach(item => {
+                        html += `
+                        <div class="admin-report-row published-row">
+                            <div class="admin-row-info">
+                                <p class="admin-row-title" title="${escHtml(item.title)}">${escHtml(item.title)}</p>
+                                <div class="admin-row-meta">
+                                    <span>📅 ${formatDate(item.date)}</span>
+                                    <span>🏷 ${getCategoryLabel(item.category)}</span>
+                                    <span style="color:#10b981; font-weight:600;">● Published</span>
+                                </div>
+                            </div>
+                            <div class="admin-row-actions">
+                                <button class="btn-admin-edit" onclick="location.href='admin.html?edit=${item.id}'">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                    Edit
+                                </button>
+                                <button class="btn-admin-delete" onclick="deleteReport('${item.id}', 'published')">
+                                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                                    Delete
+                                </button>
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+
+                async function publishDraft(id) {
+                    if (!confirm("Publish this report to the site?")) return;
+                    try {
+                        await db.collection("insights").doc(id).update({ status: 'published' });
+                        alert("Published! The report is now visible on the Insights page.");
+                        await loadAdminSections();
+                        allInsights = [];
+                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        snap.forEach(doc => {
+                            const d = { id: doc.id, ...doc.data() };
+                            if (d.status !== 'draft') allInsights.push(d);
+                        });
+                        renderInsightCards(3);
+                    } catch(e) {
+                        console.error(e);
+                        alert("Error while publishing.");
+                    }
+                }
+
+                async function deleteReport(id, type) {
+                    const label = type === 'draft' ? 'draft report' : 'published report';
+                    if (!confirm(`Permanently delete this ${label}?\nThis action cannot be undone.`)) return;
+                    try {
+                        await db.collection("insights").doc(id).delete();
+                        alert("Deleted successfully.");
+                        await loadAdminSections();
+                        allInsights = [];
+                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        snap.forEach(doc => {
+                            const d = { id: doc.id, ...doc.data() };
+                            if (d.status !== 'draft') allInsights.push(d);
+                        });
+                        renderInsightCards(3);
+                    } catch(e) {
+                        console.error(e);
+                        alert("Error while deleting.");
+                    }
+                }
+
+                function escHtml(str) {
+                    if (!str) return '';
+                    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
                 }
             </script>
         </div>
@@ -241,7 +478,8 @@
                 const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
                 
                 querySnapshot.forEach((doc) => {
-                    allInsights.push({ id: doc.id, ...doc.data() });
+                    const d = { id: doc.id, ...doc.data() };
+                    if (d.status !== 'draft') allInsights.push(d);
                 });
 
                 renderInsightCards(3);

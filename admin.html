@@ -182,7 +182,7 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('post-date').valueAsDate = new Date();
             
             // Quill Editor 초기화
@@ -203,7 +203,29 @@
             
             // db 객체가 정상적으로 불러와졌는지 확인 후 렌더링
             if(db) {
-                renderList();
+                // 목록 로드 후 URL 쿼리 파라미터(?edit=ID) 확인하여 수정 모드 자동 진입
+                await renderList();
+                const urlParams = new URLSearchParams(window.location.search);
+                const editId = urlParams.get('edit');
+                if (editId) {
+                    const post = adminPosts.find(p => p.id === editId);
+                    if (post) {
+                        editingId = editId;
+                        document.getElementById('post-title').value = post.title || '';
+                        document.getElementById('post-category').value = post.category || '';
+                        document.getElementById('post-date').value = post.date || '';
+                        document.getElementById('post-link').value = (post.link && post.link !== '#') ? post.link : '';
+                        document.getElementById('post-desc').value = post.desc || '';
+                        window.quill.root.innerHTML = post.fullContent || '';
+                        document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
+                        // 폼 상단으로 부드럽게 스크롤
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        // URL에서 파라미터 제거 (히스토리 오염 방지)
+                        history.replaceState(null, '', 'admin.html');
+                    } else {
+                        alert('해당 리포트를 찾을 수 없습니다. 이미 삭제되었거나 ID가 잘못되었습니다.');
+                    }
+                }
             } else {
                 document.getElementById('post-list-container').innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 30px 0;">js/firebase-init.js 파일에서 Firebase 설정(Config)을 입력해 주세요.</p>`;
             }
