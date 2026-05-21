@@ -1,0 +1,11 @@
+{
+  "name": "sgca-insight-generator",
+  "version": "1.0.0",
+  "description": "SGCA Partners 인사이트 자동 생성 스크립트",
+  "scripts": {
+    "generate": "node scripts/generate-insight.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
