@@ -31,9 +31,10 @@ function httpsRequest(method, hostname, path, headers, body) {
     const req = https.request(
       { hostname, path, method, headers: mergedHeaders },
       (res) => {
-        let raw = '';
-        res.on('data', c => raw += c);
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
         res.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8');
           try { resolve({ status: res.statusCode, body: JSON.parse(raw) }); }
           catch (e) { reject(new Error(`JSON 파싱 실패: ${raw.slice(0, 300)}`)); }
         });
