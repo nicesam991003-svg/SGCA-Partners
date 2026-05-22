@@ -231,7 +231,7 @@
                         html += `
                         <div class="admin-report-row draft-row">
                             <div class="admin-row-info">
-                                <p class="admin-row-title" title="${escHtml(item.title)}">${escHtml(item.title)}</p>
+                                <p class="admin-row-title" title="${escHtml(item.titleEn || item.title)}">${escHtml(item.titleEn || item.title)}</p>
                                 <div class="admin-row-meta">
                                     <span>📅 ${formatDate(item.date)}</span>
                                     <span>🏷 ${getCategoryLabel(item.category)}</span>
@@ -271,7 +271,7 @@
                         html += `
                         <div class="admin-report-row published-row">
                             <div class="admin-row-info">
-                                <p class="admin-row-title" title="${escHtml(item.title)}">${escHtml(item.title)}</p>
+                                <p class="admin-row-title" title="${escHtml(item.titleEn || item.title)}">${escHtml(item.titleEn || item.title)}</p>
                                 <div class="admin-row-meta">
                                     <span>📅 ${formatDate(item.date)}</span>
                                     <span>🏷 ${getCategoryLabel(item.category)}</span>
@@ -344,9 +344,9 @@
 
                     document.getElementById('draftPreviewDate').textContent = formatDate(item.date);
                     document.getElementById('draftPreviewCat').textContent = getCategoryLabel(item.category);
-                    document.getElementById('draftPreviewTitle').textContent = item.title || '';
-                    document.getElementById('draftPreviewDesc').textContent = item.desc || '';
-                    document.getElementById('draftPreviewBody').innerHTML = item.fullContent || item.desc || '';
+                    document.getElementById('draftPreviewTitle').textContent = item.titleEn || item.title || '';
+                    document.getElementById('draftPreviewDesc').textContent = item.descEn || item.desc || '';
+                    document.getElementById('draftPreviewBody').innerHTML = item.fullContentEn || item.fullContent || item.descEn || item.desc || '';
 
                     const linkEl = document.getElementById('draftPreviewLink');
                     if (item.link && item.link !== '#') {
@@ -488,7 +488,8 @@
                     dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
                 }
 
-                const shortDesc = item.desc.length > 400 ? item.desc.substring(0, 400) + '...' : item.desc;
+                const itemDesc = item.descEn || item.desc || '';
+                const shortDesc = itemDesc.length > 400 ? itemDesc.substring(0, 400) + '...' : itemDesc;
 
                 let categoryBadge = '';
                 switch(item.category) {
@@ -519,7 +520,7 @@
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
-                            <h3 class="rss-title">${item.title}</h3>
+                            <h3 class="rss-title">${item.titleEn || item.title}</h3>
                             <p class="rss-desc" style="margin-top: 5px;">${shortDesc}</p>
                         </div>
                     </div>
@@ -576,11 +577,13 @@
             }
 
             document.getElementById('modalDate').textContent = dateStr;
-            document.getElementById('modalTitle').textContent = item.title;
-            if (item.fullContent) {
-                document.getElementById('modalBody').innerHTML = item.fullContent;
+            document.getElementById('modalTitle').textContent = item.titleEn || item.title;
+            const itemFullContent = item.fullContentEn || item.fullContent || '';
+            const itemDesc = item.descEn || item.desc || '';
+            if (itemFullContent) {
+                document.getElementById('modalBody').innerHTML = itemFullContent;
             } else {
-                document.getElementById('modalBody').innerHTML = item.desc.replace(/\n/g, '<br>');
+                document.getElementById('modalBody').innerHTML = itemDesc.replace(/\n/g, '<br>');
             }
             
             const linkEl = document.getElementById('modalLink');
