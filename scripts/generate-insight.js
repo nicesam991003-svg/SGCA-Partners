@@ -59,7 +59,7 @@ function getTodayKST() {
 async function callGemini(systemPrompt, userPrompt) {
   const res = await httpsPost(
     'generativelanguage.googleapis.com',
-    `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {},
     {
       contents: [
