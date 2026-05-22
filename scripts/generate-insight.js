@@ -125,7 +125,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 주요 내용</h4><ul><li>핵심 변경/발표 항목</li></ul>
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
 <h4>■ 시사점 및 대응 권고</h4><p>국내 인증기업 대응 방향</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [출처명] ([날짜])</p>`,
+<p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [출처명] ([날짜])</p>`,
     userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요.`,
     sleepTime: 20000
   },
@@ -163,7 +163,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 주요 내용</h4><ul><li>핵심 요구사항·변경사항 항목별 기술</li></ul>
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`,
+<p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
     userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
     sleepTime: 20000
   },
@@ -198,7 +198,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 주요 내용</h4><ul><li>핵심 요구사항·표준 변경·인증 절차 변경 항목별 기술</li></ul>
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
 <h4>■ 국내 수출기업 시사점 및 대응 권고</h4><p>한국 제조·수출 기업의 인증 전략 및 준비 사항</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`,
+<p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
     userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 제품인증 관련 규정·표준·정책 중 SGCA Partners 고객(기계류 CE 인증·북미 NRTL 인증·방폭 IECEx 인증을 준비하는 한국 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. EU Machinery Regulation 2023/1230 시행 준비, OSHA NRTL 표준 변경, IECEx 방폭 관련 최신 소식을 우선 확인하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
     sleepTime: 0
   }
@@ -230,6 +230,11 @@ ${config.sources}
   "desc": "${config.descInstructions}",
   "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
 }
+
+중요 지침:
+1. 반환 형식은 반드시 파싱 가능한 유효한 JSON 객체여야 합니다. JSON 형식에 어긋나는 어떤 텍스트도 포함하지 마세요.
+2. fullContent 내의 HTML 태그나 속성(예: style 등)에는 절대 큰따옴표(")를 사용하지 말고, 항상 작은따옴표(')를 사용하세요. (예: <p style='font-size:0.85em;color:#6c7a89;'>)
+3. 만약 title, desc, fullContent 등의 문자열 내용 안에 어쩔 수 없이 큰따옴표(")를 사용해야 하는 경우, 반드시 백슬래시로 이스케이프하여 \\" 형태로 출력하세요.
 
 fullContent HTML 구조:
 ${config.layout}`;
