@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -227,7 +227,8 @@
                     }
                     let html = '';
                     allDrafts.forEach(item => {
-                        const shortDesc = (item.desc || '').length > 120 ? item.desc.substring(0, 120) + '…' : (item.desc || '');
+                        const dsc = item.descEn || item.desc || '';
+                        const shortDesc = dsc.length > 120 ? dsc.substring(0, 120) + '...' : dsc;
                         html += `
                         <div class="admin-report-row draft-row">
                             <div class="admin-row-info">
