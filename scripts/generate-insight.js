@@ -46,6 +46,33 @@ function httpsRequest(method, hostname, path, headers, body) {
   });
 }
 const httpsPost = (h, p, hd, b) => httpsRequest('POST', h, p, hd, b);
+const httpsGet = (h, p, hd) => httpsRequest('GET', h, p, hd);
+
+// ─────────────────────────────────────────
+// 2.1. 기존 Firestore 리포트 가져오기 (중복 수집 방지용)
+// ─────────────────────────────────────────
+async function getExistingReports() {
+  const hostname = 'firestore.googleapis.com';
+  const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?key=${FIREBASE_API_KEY}&pageSize=100`;
+  try {
+    const res = await httpsGet(hostname, path, {});
+    if (res.status !== 200) {
+      console.warn(`⚠️ 기존 리포트 목록 가져오기 실패 (Status: ${res.status}). 빈 배열로 계속 진행합니다.`);
+      return [];
+    }
+    const docs = res.body.documents || [];
+    return docs.map(doc => {
+      const fields = doc.fields || {};
+      return {
+        title: fields.title?.stringValue || '',
+        link: fields.link?.stringValue || ''
+      };
+    });
+  } catch (e) {
+    console.warn(`⚠️ 기존 리포트 목록 가져오기 실패 (${e.message}). 빈 배열로 계속 진행합니다.`);
+    return [];
+  }
+}
 
 // ─────────────────────────────────────────
 // 3. KST 오늘 날짜
@@ -63,52 +90,31 @@ async function callGemini(systemPrompt, userPrompt) {
     `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {},
     {
+      system_instruction: { parts: { text: systemPrompt } },
       contents: [
-        {
-          parts: [
-            { text: userPrompt }
-          ]
-        }
-      ],
-      systemInstruction: {
-        parts: [
-          { text: systemPrompt }
-        ]
-      },
-      tools: [
-        { google_search: {} }
+        { role: 'user', parts: [{ text: userPrompt }] }
       ],
       generationConfig: {
-        maxOutputTokens: 8192
+        responseMimeType: "application/json"
       }
     }
   );
 
   if (res.status !== 200) {
-    throw new Error(`Gemini API 오류 (${res.status}): ${JSON.stringify(res.body)}`);
+    throw new Error(`Gemini API Error (${res.status}): ${JSON.stringify(res.body)}`);
   }
 
-  const text = res.body.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error('Gemini 응답에서 텍스트를 찾을 수 없습니다.');
-  }
-
-  let cleanText = text.trim();
-  // 마크다운 ```json ... ``` 코드 블록이 포함되어 있다면 제거
-  if (cleanText.startsWith('```')) {
-    cleanText = cleanText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
-  }
-
+  const rawText = res.body.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   try {
+    let cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
     return JSON.parse(cleanText);
   } catch (e) {
-    console.error('── 원본 응답 파싱 실패 ──\n', text);
-    throw new Error(`Gemini JSON 파싱 오류: ${e.message}`);
+    throw new Error(`JSON 파싱 실패: ${e.message}\n원문: ${rawText}`);
   }
 }
 
 // ─────────────────────────────────────────
-// 5. 카테고리별 설정 구성 정의
+// 5. 카테고리별 프롬프트 및 설정
 // ─────────────────────────────────────────
 const CATEGORY_CONFIGS = {
   'management-system': {
@@ -118,8 +124,7 @@ const CATEGORY_CONFIGS = {
     role: '경영시스템인증 전문 리서치 어시스턴트',
     additionalRoleInfo: '웹 검색으로 ISO 경영시스템인증(ISO 9001·14001·45001·13485·19443) 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
     sources: `- ISO 공식(iso.org), IAF(iaf.nu), KAB(kab.or.kr)
-- ANAB(anab.org), IAS(iasonline.org), UKAS(ukas.com)
-- BSI(bsigroup.com), DNV(dnv.com), SGS(sgs.com), TÜV SÜD(tuvsud.com)`,
+- ANAB(anab.org), IAS(iasonline.org), UKAS(ukas.com)`,
     titleInstructions: '리포트 제목 (한국어, 구체적)',
     descInstructions: '2~3줄 한국어 요약 (핵심 내용 중심)',
     layout: `<h4>■ 개요</h4><p>뉴스 배경·발표 주체</p>
@@ -127,7 +132,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
 <h4>■ 시사점 및 대응 권고</h4><p>국내 인증기업 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [출처명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 1주일 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 만약 최근 1주일 이내의 새로운 뉴스가 전혀 없다면, {"skip": true, "reason": "최근 1주일 내 경영시스템인증 신규 뉴스가 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
   'cyber-security': {
@@ -165,7 +170,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요. 단 최근 2주 이내 의미 있는 뉴스가 없다면, {"skip": true, "reason": "최근 2주 내 사이버보안 신규 소식 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
   'product-certification': {
@@ -208,7 +213,7 @@ const CATEGORY_CONFIGS = {
 // ─────────────────────────────────────────
 // 6. 카테고리 리포트 생성 통합 함수
 // ─────────────────────────────────────────
-async function generateCategoryReport(categoryKey, today) {
+async function generateCategoryReport(categoryKey, today, existingContext = '') {
   const config = CATEGORY_CONFIGS[categoryKey];
   if (!config) {
     throw new Error(`지원하지 않는 카테고리입니다: ${categoryKey}`);
@@ -225,10 +230,12 @@ ${config.sources}
 반환 형식:
 {
   "title": "${config.titleInstructions}",
+  "titleEn": "English translation of the title",
   "category": "${categoryKey}",
   "date": "${today}",
   "link": "실제 존재하는 원문 URL",
   "desc": "${config.descInstructions}",
+  "descEn": "English translation of the desc",
   "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
 }
 
@@ -240,12 +247,17 @@ ${config.sources}
 fullContent HTML 구조:
 ${config.layout}`;
 
-  const userPrompt = config.userPromptTemplate(today);
+  const userPrompt = config.userPromptTemplate(today) + existingContext;
 
   const report = await callGemini(systemPrompt, userPrompt);
   
+  if (report.skip === true) {
+    console.log(`  ⏭️ 스킵됨: ${report.reason || '신규 뉴스 없음'}`);
+    return report;
+  }
+
   // 필수 필드 검증
-  const required = ['title', 'category', 'date', 'desc', 'fullContent'];
+  const required = ['title', 'titleEn', 'category', 'date', 'desc', 'descEn', 'fullContent', 'fullContentEn'];
   required.forEach(f => {
     if (!report[f]) {
       throw new Error(`${config.label} 리포트 필드 누락: ${f}`);
@@ -263,11 +275,14 @@ async function saveToFirestore(report) {
   const doc = {
     fields: {
       title:       { stringValue: report.title       || '' },
+      titleEn:     { stringValue: report.titleEn     || '' },
       category:    { stringValue: report.category    || '' },
       date:        { stringValue: report.date        || '' },
       link:        { stringValue: report.link        || '#' },
       desc:        { stringValue: report.desc        || '' },
+      descEn:      { stringValue: report.descEn      || '' },
       fullContent: { stringValue: report.fullContent || '' },
+      fullContentEn: { stringValue: report.fullContentEn || '' },
       status:      { stringValue: 'draft' },
       createdAt:   { stringValue: new Date().toISOString() }
     }
@@ -302,6 +317,16 @@ function sleep(ms) {
   const today = getTodayKST();
   console.log(`📅 기준 날짜 (KST): ${today}`);
 
+  console.log('🔍 중복 방지를 위해 기존 리포트 목록을 가져옵니다...');
+  const existingReports = await getExistingReports();
+  let existingContext = '';
+  if (existingReports.length > 0) {
+    existingContext = '\n\n[주의: 아래 목록은 이미 이전에 작성된 리포트입니다. 반드시 아래 목록과 중복되지 않는 새로운 뉴스를 선정하세요.]\n';
+    existingReports.forEach((r, idx) => {
+      if(r.title) existingContext += `${idx + 1}. ${r.title}\n`;
+    });
+  }
+
   const results = [];
   const errors  = [];
   const categories = Object.keys(CATEGORY_CONFIGS);
@@ -311,10 +336,14 @@ function sleep(ms) {
     const config = CATEGORY_CONFIGS[categoryKey];
 
     try {
-      const report = await generateCategoryReport(categoryKey, today);
-      const docId  = await saveToFirestore(report);
-      results.push({ label: config.label, title: report.title, docId });
-      console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
+      const report = await generateCategoryReport(categoryKey, today, existingContext);
+      if (report.skip === true) {
+        results.push({ label: config.label, title: '건너뜀 (신규 뉴스 없음)', docId: 'N/A' });
+      } else {
+        const docId  = await saveToFirestore(report);
+        results.push({ label: config.label, title: report.title, docId });
+        console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
+      }
     } catch (e) {
       console.error(`  ❌ ${config.label} 실패: ${e.message}`);
       errors.push(config.label);

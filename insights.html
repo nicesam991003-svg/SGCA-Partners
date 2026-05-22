@@ -195,27 +195,14 @@
                     return dateStr;
                 }
 
-                async function loadAdminSections() {
+                function loadAdminSections() {
                     if (!db) { alert("Firebase가 연결되지 않았습니다."); return; }
 
                     document.getElementById('draft-section').style.display = 'block';
                     document.getElementById('published-manage-section').style.display = 'block';
 
-                    try {
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
-                        allDrafts = [];
-                        allPublished = [];
-                        snap.forEach(doc => {
-                            const d = { id: doc.id, ...doc.data() };
-                            if (d.status === 'draft') allDrafts.push(d);
-                            else allPublished.push(d);
-                        });
-                        renderDraftSection();
-                        renderPublishedManageSection();
-                    } catch(e) {
-                        console.error(e);
-                        document.getElementById('draft-feed-container').innerHTML = '<p style="color:#e74c3c;">데이터 로드 실패. 콘솔을 확인하세요.</p>';
-                    }
+                    renderDraftSection();
+                    renderPublishedManageSection();
                 }
 
                 function renderDraftSection() {
@@ -299,15 +286,6 @@
                     try {
                         await db.collection("insights").doc(id).update({ status: 'published' });
                         alert("게시 완료! 리포트가 인사이트 페이지에 표시됩니다.");
-                        await loadAdminSections();
-                        // 공개 리포트 목록도 갱신
-                        allInsights = [];
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
-                        snap.forEach(doc => {
-                            const d = { id: doc.id, ...doc.data() };
-                            if (d.status !== 'draft') allInsights.push(d);
-                        });
-                        renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
                         alert("게시 중 오류가 발생했습니다.");
@@ -320,15 +298,6 @@
                     try {
                         await db.collection("insights").doc(id).delete();
                         alert("삭제 완료되었습니다.");
-                        await loadAdminSections();
-                        // 공개 리포트 목록도 갱신
-                        allInsights = [];
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
-                        snap.forEach(doc => {
-                            const d = { id: doc.id, ...doc.data() };
-                            if (d.status !== 'draft') allInsights.push(d);
-                        });
-                        renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
                         alert("삭제 중 오류가 발생했습니다.");
@@ -556,7 +525,7 @@
             container.innerHTML = html;
         };
 
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             if (!db) {
                 renderInsightCards(3);
                 return;
@@ -565,20 +534,34 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">최신 리포트를 불러오는 중입니다...</div>';
 
-            try {
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
-                
+            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+                allInsights = [];
+                allDrafts = [];
+                allPublished = [];
+
                 querySnapshot.forEach((doc) => {
                     const d = { id: doc.id, ...doc.data() };
-                    if (d.status !== 'draft') allInsights.push(d);
+                    if (d.status === 'draft') {
+                        allDrafts.push(d);
+                    } else {
+                        allInsights.push(d);
+                        allPublished.push(d);
+                    }
                 });
 
-                // 처음 로드될 때는 3개만 표시
-                renderInsightCards(3);
-            } catch (error) {
+                // 처음 로드될 때는 3개, 이후에는 기존 렌더링된 카드 수 유지
+                const currentCount = document.querySelectorAll('.rss-card').length || 3;
+                renderInsightCards(currentCount);
+
+                // 관리자 모드 활성화 시 관리자 섹션 렌더링
+                if (isAdminMode) {
+                    renderDraftSection();
+                    renderPublishedManageSection();
+                }
+            }, (error) => {
                 console.error("데이터 로드 실패: ", error);
                 container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
-            }
+            });
         });
 
         window.openInsightModal = function(id) {
