@@ -76,10 +76,7 @@ async function callGemini(systemPrompt, userPrompt) {
       },
       tools: [
         { google_search: {} }
-      ],
-      generationConfig: {
-        responseMimeType: 'application/json'
-      }
+      ]
     }
   );
 
@@ -92,8 +89,14 @@ async function callGemini(systemPrompt, userPrompt) {
     throw new Error('Gemini 응답에서 텍스트를 찾을 수 없습니다.');
   }
 
+  let cleanText = text.trim();
+  // 마크다운 ```json ... ``` 코드 블록이 포함되어 있다면 제거
+  if (cleanText.startsWith('```')) {
+    cleanText = cleanText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
+  }
+
   try {
-    return JSON.parse(text.trim());
+    return JSON.parse(cleanText);
   } catch (e) {
     console.error('── 원본 응답 파싱 실패 ──\n', text);
     throw new Error(`Gemini JSON 파싱 오류: ${e.message}`);
