@@ -1,6 +1,4 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-
-html {
+﻿html {
   scroll-padding-top: 120px;
   overflow-x: hidden;
   scroll-behavior: smooth;
