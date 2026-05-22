@@ -76,7 +76,10 @@ async function callGemini(systemPrompt, userPrompt) {
       },
       tools: [
         { google_search: {} }
-      ]
+      ],
+      generationConfig: {
+        maxOutputTokens: 8192
+      }
     }
   );
 
