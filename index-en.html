@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -252,7 +252,8 @@
                         dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
                     }
 
-                    const shortDesc = item.desc.length > 250 ? item.desc.substring(0, 250) + '...' : item.desc;
+                    const itemDesc = item.descEn || item.desc || '';
+                    const shortDesc = itemDesc.length > 250 ? itemDesc.substring(0, 250) + '...' : itemDesc;
 
                     let categoryBadge = '';
                     switch(item.category) {
@@ -283,7 +284,7 @@
                             ${categoryBadge}
                             <div class="main-rss-content" style="padding: 2rem;">
                                 <span class="main-rss-date">${dateStr}</span>
-                                <h3 class="main-rss-title">${item.title}</h3>
+                                <h3 class="main-rss-title">${item.titleEn || item.title}</h3>
                                 <p class="main-rss-desc">${shortDesc}</p>
                             </div>
                         </div>
@@ -309,11 +310,13 @@
             }
 
             document.getElementById('modalDate').textContent = dateStr;
-            document.getElementById('modalTitle').textContent = item.title;
-            if (item.fullContent) {
-                document.getElementById('modalBody').innerHTML = item.fullContent;
+            document.getElementById('modalTitle').textContent = item.titleEn || item.title;
+            const itemFullContent = item.fullContentEn || item.fullContent || '';
+            const itemDesc = item.descEn || item.desc || '';
+            if (itemFullContent) {
+                document.getElementById('modalBody').innerHTML = itemFullContent;
             } else {
-                document.getElementById('modalBody').innerHTML = item.desc.replace(/\n/g, '<br>');
+                document.getElementById('modalBody').innerHTML = itemDesc.replace(/\n/g, '<br>');
             }
             
             const linkEl = document.getElementById('modalLink');
