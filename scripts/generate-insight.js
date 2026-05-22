@@ -236,7 +236,8 @@ ${config.sources}
   "link": "실제 존재하는 원문 URL",
   "desc": "${config.descInstructions}",
   "descEn": "English translation of the desc",
-  "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
+  "fullContent": "A4 1장 분량 HTML (아래 구조 참고)",
+  "fullContentEn": "English translation of the fullContent HTML"
 }
 
 중요 지침:
