@@ -9,12 +9,12 @@ const https = require('https');
 // ─────────────────────────────────────────
 // 1. 환경변수 확인
 // ─────────────────────────────────────────
-const ANTHROPIC_API_KEY   = process.env.ANTHROPIC_API_KEY;
+const GEMINI_API_KEY      = process.env.GEMINI_API_KEY;
 const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
-if (!ANTHROPIC_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID) {
-  console.error('❌ 필수 환경변수 누락: ANTHROPIC_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
+if (!GEMINI_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID) {
+  console.error('❌ 필수 환경변수 누락: GEMINI_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
   process.exit(1);
 }
 
@@ -23,11 +23,13 @@ if (!ANTHROPIC_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID) {
 // ─────────────────────────────────────────
 function httpsRequest(method, hostname, path, headers, body) {
   return new Promise((resolve, reject) => {
-    const data = JSON.stringify(body);
+    const data = body !== undefined ? JSON.stringify(body) : '';
+    const mergedHeaders = { 'Content-Type': 'application/json', ...headers };
+    if (data) {
+      mergedHeaders['Content-Length'] = Buffer.byteLength(data);
+    }
     const req = https.request(
-      { hostname, path, method,
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data), ...headers }
-      },
+      { hostname, path, method, headers: mergedHeaders },
       (res) => {
         let raw = '';
         res.on('data', c => raw += c);
@@ -38,11 +40,11 @@ function httpsRequest(method, hostname, path, headers, body) {
       }
     );
     req.on('error', reject);
-    req.write(data);
+    if (data) req.write(data);
     req.end();
   });
 }
-const httpsPost  = (h, p, hd, b) => httpsRequest('POST',  h, p, hd, b);
+const httpsPost = (h, p, hd, b) => httpsRequest('POST', h, p, hd, b);
 
 // ─────────────────────────────────────────
 // 3. KST 오늘 날짜
@@ -52,144 +54,82 @@ function getTodayKST() {
 }
 
 // ─────────────────────────────────────────
-// 4. Anthropic API 호출 공통 함수
+// 4. Gemini API 호출 함수
 // ─────────────────────────────────────────
-async function callAnthropic(systemPrompt, userPrompt) {
+async function callGemini(systemPrompt, userPrompt) {
   const res = await httpsPost(
-    'api.anthropic.com',
-    '/v1/messages',
+    'generativelanguage.googleapis.com',
+    `/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+    {},
     {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'web-search-2025-03-05'
-    },
-    {
-      model: 'claude-sonnet-4-5',
-      max_tokens: 4000,
-      system: systemPrompt,
-      tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-      messages: [{ role: 'user', content: userPrompt }]
+      contents: [
+        {
+          parts: [
+            { text: userPrompt }
+          ]
+        }
+      ],
+      systemInstruction: {
+        parts: [
+          { text: systemPrompt }
+        ]
+      },
+      tools: [
+        { google_search: {} }
+      ],
+      generationConfig: {
+        responseMimeType: 'application/json'
+      }
     }
   );
 
   if (res.status !== 200) {
-    throw new Error(`Anthropic API 오류 (${res.status}): ${JSON.stringify(res.body)}`);
+    throw new Error(`Gemini API 오류 (${res.status}): ${JSON.stringify(res.body)}`);
   }
 
-  // 마지막 text 블록 추출 (web_search 결과 이후 최종 답변)
-  const blocks = res.body.content || [];
-  let jsonText = '';
-  for (let i = blocks.length - 1; i >= 0; i--) {
-    if (blocks[i].type === 'text' && blocks[i].text) {
-      jsonText = blocks[i].text.trim();
-      break;
-    }
-  }
-  if (!jsonText) throw new Error('Anthropic 응답에서 텍스트 블록을 찾을 수 없습니다.');
-
-  // JSON 객체만 추출 (앞뒤 설명 텍스트·마크다운 코드블록 모두 제거)
-  // fullContent의 HTML이 JSON을 깨뜨리는 경우를 방지하기 위해
-  // fullContent 필드를 임시 플레이스홀더로 치환 후 파싱
-  const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    console.error('── 원본 응답 (JSON 없음) ──\n', jsonText.slice(0, 500));
-    throw new Error('응답에서 JSON 객체를 찾을 수 없습니다.');
-  }
-  let extracted = jsonMatch[0];
-
-  // fullContent 값을 별도로 추출 (HTML이 JSON 파싱을 방해하므로)
-  let fullContent = '';
-  const fcMatch = extracted.match(/"fullContent"\s*:\s*"([\s\S]*?)"\s*(?:,\s*"\w+"|}\s*$)/);
-  if (fcMatch) {
-    fullContent = fcMatch[1]
-      .replace(/\\n/g, '\n')
-      .replace(/\\"/g, '"')
-      .replace(/\\\\/g, '\\');
-    // fullContent를 안전한 플레이스홀더로 치환
-    extracted = extracted.replace(/"fullContent"\s*:\s*"[\s\S]*?"(\s*(?:,\s*"\w+"|}\s*$))/, `"fullContent":"__PLACEHOLDER__"$1`);
+  const text = res.body.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Gemini 응답에서 텍스트를 찾을 수 없습니다.');
   }
 
-  let parsed;
   try {
-    parsed = JSON.parse(extracted);
+    return JSON.parse(text.trim());
   } catch (e) {
-    // 파싱 실패 시 정규식으로 각 필드 개별 추출
-    console.warn('JSON 직접 파싱 실패, 필드별 추출 시도...');
-    parsed = {};
-    const fields = ['title','category','date','link','desc'];
-    fields.forEach(f => {
-      const m = jsonText.match(new RegExp(`"${f}"\\s*:\\s*"([^"]*?)"`));
-      if (m) parsed[f] = m[1];
-    });
+    console.error('── 원본 응답 파싱 실패 ──\n', text);
+    throw new Error(`Gemini JSON 파싱 오류: ${e.message}`);
   }
-
-  // fullContent 복원
-  if (fullContent) {
-    parsed.fullContent = fullContent;
-  } else {
-    // 플레이스홀더 없이 fullContent 별도 추출 시도
-    const fcMatch2 = jsonText.match(/"fullContent"\s*:\s*"([\s\S]*?)(?="(?:title|category|date|link|desc|status|createdAt)"|\}\s*$)/);
-    if (fcMatch2) {
-      parsed.fullContent = fcMatch2[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').replace(/",?\s*$/, '');
-    }
-  }
-
-  return parsed;
 }
 
 // ─────────────────────────────────────────
-// 5-A. 경영시스템인증 리포트 생성
+// 5. 카테고리별 설정 구성 정의
 // ─────────────────────────────────────────
-async function generateManagementReport(today) {
-  console.log('\n📋 [1/3] 경영시스템인증 최신 뉴스 검색 중...');
-
-  const system = `당신은 SGCA Partners의 경영시스템인증 전문 리서치 어시스턴트입니다.
-웹 검색으로 ISO 경영시스템인증(ISO 9001·14001·45001·13485·19443) 분야의 최신 뉴스 1건을 찾아
-아래 JSON만 반환하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요.
-
-검색 우선 출처:
-- ISO 공식(iso.org), IAF(iaf.nu), KAB(kab.or.kr)
+const CATEGORY_CONFIGS = {
+  'management-system': {
+    label: '경영시스템인증',
+    emoji: '📋',
+    step: '1/3',
+    role: '경영시스템인증 전문 리서치 어시스턴트',
+    additionalRoleInfo: '웹 검색으로 ISO 경영시스템인증(ISO 9001·14001·45001·13485·19443) 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
+    sources: `- ISO 공식(iso.org), IAF(iaf.nu), KAB(kab.or.kr)
 - ANAB(anab.org), IAS(iasonline.org), UKAS(ukas.com)
-- BSI(bsigroup.com), DNV(dnv.com), SGS(sgs.com), TÜV SÜD(tuvsud.com)
-
-반환 형식:
-{
-  "title": "리포트 제목 (한국어, 구체적)",
-  "category": "management-system",
-  "date": "${today}",
-  "link": "실제 존재하는 원문 URL",
-  "desc": "2~3줄 한국어 요약 (핵심 내용 중심)",
-  "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
-}
-
-fullContent HTML 구조:
-<h4>■ 개요</h4><p>뉴스 배경·발표 주체</p>
+- BSI(bsigroup.com), DNV(dnv.com), SGS(sgs.com), TÜV SÜD(tuvsud.com)`,
+    titleInstructions: '리포트 제목 (한국어, 구체적)',
+    descInstructions: '2~3줄 한국어 요약 (핵심 내용 중심)',
+    layout: `<h4>■ 개요</h4><p>뉴스 배경·발표 주체</p>
 <h4>■ 주요 내용</h4><ul><li>핵심 변경/발표 항목</li></ul>
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
 <h4>■ 시사점 및 대응 권고</h4><p>국내 인증기업 대응 방향</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [출처명] ([날짜])</p>`;
-
-  const user = `오늘(${today}) 기준 최근 2주 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요.`;
-
-  const report = await callAnthropic(system, user);
-  const required = ['title','category','date','desc','fullContent'];
-  required.forEach(f => { if (!report[f]) throw new Error(`경영시스템인증 리포트 필드 누락: ${f}`); });
-  console.log(`  ✅ 생성 완료: "${report.title}"`);
-  return report;
-}
-
-// ─────────────────────────────────────────
-// 5-B. 사이버보안 리포트 생성
-// ─────────────────────────────────────────
-async function generateCyberSecurityReport(today) {
-  console.log('\n🔒 [2/3] 사이버보안 최신 뉴스 검색 중...');
-
-  const system = `당신은 SGCA Partners의 사이버보안 규제 전문 리서치 어시스턴트입니다.
-웹 검색으로 아래 출처들에서 산업용 제품·의료기기·무선제품·공급망 사이버보안 분야의 최신 뉴스 1건을 찾아
-아래 JSON만 반환하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요.
-
-검색 우선 출처 (지역별):
-[유럽]
+<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [출처명] ([날짜])</p>`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요.`,
+    sleepTime: 20000
+  },
+  'cyber-security': {
+    label: '사이버보안',
+    emoji: '🔒',
+    step: '2/3',
+    role: '사이버보안 규제 전문 리서치 어시스턴트',
+    additionalRoleInfo: '웹 검색으로 아래 출처들에서 산업용 제품·의료기기·무선제품·공급망 사이버보안 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
+    sources: `[유럽]
 - European Commission / Digital Excellence and Science Infrastructure (CRA - 사이버 복원력 법, 무선제품·기계·SW)
 - ENISA - europa.eu/enisa (유럽 사이버보안 표준·가이드라인)
 - MDCG - health.ec.europa.eu (의료기기 MDR 사이버보안)
@@ -210,47 +150,24 @@ async function generateCyberSecurityReport(today) {
 
 [일본]
 - PMDA - pmda.go.jp (의료기기 사이버보안)
-- METI(경제산업성) - meti.go.jp (산업기계·공장자동화·IoT 보안)
-
-반환 형식:
-{
-  "title": "리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 포함)",
-  "category": "cyber-security",
-  "date": "${today}",
-  "link": "실제 존재하는 원문 URL",
-  "desc": "2~3줄 한국어 요약 (핵심 내용·영향 중심)",
-  "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
-}
-
-fullContent HTML 구조:
-<h4>■ 개요</h4><p>발표 기관·배경·규제 대상 범위</p>
+- METI(경제산업성) - meti.go.jp (산업기계·공장자동화·IoT 보안)`,
+    titleInstructions: '리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 포함)',
+    descInstructions: '2~3줄 한국어 요약 (핵심 내용·영향 중심)',
+    layout: `<h4>■ 개요</h4><p>발표 기관·배경·규제 대상 범위</p>
 <h4>■ 주요 내용</h4><ul><li>핵심 요구사항·변경사항 항목별 기술</li></ul>
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`;
-
-  const user = `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`;
-
-  const report = await callAnthropic(system, user);
-  const required = ['title','category','date','desc','fullContent'];
-  required.forEach(f => { if (!report[f]) throw new Error(`사이버보안 리포트 필드 누락: ${f}`); });
-  console.log(`  ✅ 생성 완료: "${report.title}"`);
-  return report;
-}
-
-// ─────────────────────────────────────────
-// 5-C. 제품인증 리포트 생성
-// ─────────────────────────────────────────
-async function generateProductCertReport(today) {
-  console.log('\n🏷️  [3/3] 제품인증 최신 뉴스 검색 중...');
-
-  const system = `당신은 SGCA Partners의 제품인증 전문 리서치 어시스턴트입니다.
-웹 검색으로 아래 출처들에서 기계류 CE/NRTL 인증·방폭(HazLoc/IECEx) 분야의 최신 뉴스 1건을 찾아
-아래 JSON만 반환하세요. JSON 외 다른 텍스트는 절대 포함하지 마세요.
-
-검색 우선 출처 (분야별):
-
-[EU 기계류 규정 - Machinery Regulation EU 2023/1230]
+<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
+    sleepTime: 20000
+  },
+  'product-certification': {
+    label: '제품인증',
+    emoji: '🏷️',
+    step: '3/3',
+    role: '제품인증 전문 리서치 어시스턴트',
+    additionalRoleInfo: '웹 검색으로 아래 출처들에서 기계류 CE/NRTL 인증·방폭(HazLoc/IECEx) 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
+    sources: `[EU 기계류 규정 - Machinery Regulation EU 2023/1230]
 - European Commission Machinery 부문 - ec.europa.eu/growth/sectors/mechanical-engineering
   (법안 원문·공식 가이드라인·전환 일정·Guide to Application 최신 개정판)
 - CEN/CENELEC - cencenelec.eu
@@ -268,36 +185,67 @@ async function generateProductCertReport(today) {
 - IECEx 공식 - iecex.com/resources/news (IECEx Annual Meeting 의제·TCD 업데이트·IEC 60079 시리즈 개정)
 - Hazardex - hazardexonthenet.net
   (전 세계 방폭·공정안전 전문 미디어, IEC TC 31 칼럼, 방폭 사고 분석, IECEx 가이드라인 해설)
-핵심 이슈: 수소(Hydrogen) 생태계 확장에 따른 방폭 표준 변화·IEC 60079-19 유지보수 규격 업데이트
+핵심 이슈: 수소(Hydrogen) 생태계 확장에 따른 방폭 표준 변화·IEC 60079-19 유지보수 규격 업데이트`,
+    titleInstructions: '리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 및 표준번호 포함)',
+    descInstructions: '2~3줄 한국어 요약 (핵심 변경 내용·영향 범위 중심)',
+    layout: `<h4>■ 개요</h4><p>발표 기관·규정·표준의 배경 및 발표 경위</p>
+<h4>■ 주요 내용</h4><ul><li>핵심 요구사항·표준 변경·인증 절차 변경 항목별 기술</li></ul>
+<h4>■ 적용 대상 및 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
+<h4>■ 국내 수출기업 시사점 및 대응 권고</h4><p>한국 제조·수출 기업의 인증 전략 및 준비 사항</p>
+<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 제품인증 관련 규정·표준·정책 중 SGCA Partners 고객(기계류 CE 인증·북미 NRTL 인증·방폭 IECEx 인증을 준비하는 한국 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. EU Machinery Regulation 2023/1230 시행 준비, OSHA NRTL 표준 변경, IECEx 방폭 관련 최신 소식을 우선 확인하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
+    sleepTime: 0
+  }
+};
+
+// ─────────────────────────────────────────
+// 6. 카테고리 리포트 생성 통합 함수
+// ─────────────────────────────────────────
+async function generateCategoryReport(categoryKey, today) {
+  const config = CATEGORY_CONFIGS[categoryKey];
+  if (!config) {
+    throw new Error(`지원하지 않는 카테고리입니다: ${categoryKey}`);
+  }
+
+  console.log(`\n${config.emoji} [${config.step}] ${config.label} 최신 뉴스 검색 중...`);
+
+  const systemPrompt = `당신은 SGCA Partners의 ${config.role}입니다.
+${config.additionalRoleInfo}
+
+검색 우선 출처:
+${config.sources}
 
 반환 형식:
 {
-  "title": "리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 및 표준번호 포함)",
-  "category": "product-certification",
+  "title": "${config.titleInstructions}",
+  "category": "${categoryKey}",
   "date": "${today}",
   "link": "실제 존재하는 원문 URL",
-  "desc": "2~3줄 한국어 요약 (핵심 변경 내용·영향 범위 중심)",
+  "desc": "${config.descInstructions}",
   "fullContent": "A4 1장 분량 HTML (아래 구조 참고)"
 }
 
 fullContent HTML 구조:
-<h4>■ 개요</h4><p>발표 기관·규정·표준의 배경 및 발표 경위</p>
-<h4>■ 주요 내용</h4><ul><li>핵심 요구사항·표준 변경·인증 절차 변경 항목별 기술</li></ul>
-<h4>■ 적용 대상 및 시행 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
-<h4>■ 국내 수출기업 시사점 및 대응 권고</h4><p>한국 제조·수출 기업의 인증 전략 및 준비 사항</p>
-<p style="font-size:0.85em;color:#6c7a89;">※ 출처: [기관명] ([날짜])</p>`;
+${config.layout}`;
 
-  const user = `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 제품인증 관련 규정·표준·정책 중 SGCA Partners 고객(기계류 CE 인증·북미 NRTL 인증·방폭 IECEx 인증을 준비하는 한국 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. EU Machinery Regulation 2023/1230 시행 준비, OSHA NRTL 표준 변경, IECEx 방폭 관련 최신 소식을 우선 확인하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`;
+  const userPrompt = config.userPromptTemplate(today);
 
-  const report = await callAnthropic(system, user);
-  const required = ['title','category','date','desc','fullContent'];
-  required.forEach(f => { if (!report[f]) throw new Error(`제품인증 리포트 필드 누락: ${f}`); });
+  const report = await callGemini(systemPrompt, userPrompt);
+  
+  // 필수 필드 검증
+  const required = ['title', 'category', 'date', 'desc', 'fullContent'];
+  required.forEach(f => {
+    if (!report[f]) {
+      throw new Error(`${config.label} 리포트 필드 누락: ${f}`);
+    }
+  });
+
   console.log(`  ✅ 생성 완료: "${report.title}"`);
   return report;
 }
 
 // ─────────────────────────────────────────
-// 6. Firestore에 단일 리포트 저장 (API Key 직접 사용)
+// 7. Firestore에 단일 리포트 저장
 // ─────────────────────────────────────────
 async function saveToFirestore(report) {
   const doc = {
@@ -313,36 +261,10 @@ async function saveToFirestore(report) {
     }
   };
 
-  const res = await new Promise((resolve, reject) => {
-    const data = JSON.stringify(doc);
-    const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?key=${FIREBASE_API_KEY}`;
-    const req = https.request(
-      {
-        hostname: 'firestore.googleapis.com',
-        path,
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(data)
-        }
-      },
-      (r) => {
-        let raw = '';
-        r.on('data', c => raw += c);
-        r.on('end', () => {
-          try {
-            resolve({ status: r.statusCode, body: JSON.parse(raw) });
-          } catch (e) {
-            console.error('Firestore 응답 파싱 실패 (원본):', raw.slice(0, 300));
-            resolve({ status: r.statusCode, body: { error: raw.slice(0, 300) } });
-          }
-        });
-      }
-    );
-    req.on('error', reject);
-    req.write(data);
-    req.end();
-  });
+  const hostname = 'firestore.googleapis.com';
+  const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?key=${FIREBASE_API_KEY}`;
+  
+  const res = await httpsPost(hostname, path, {}, doc);
 
   if (res.status !== 200) {
     throw new Error(`Firestore 저장 실패 (${res.status}): ${JSON.stringify(res.body)}`);
@@ -370,46 +292,27 @@ function sleep(ms) {
 
   const results = [];
   const errors  = [];
+  const categories = Object.keys(CATEGORY_CONFIGS);
 
-  // ── 경영시스템인증 리포트 생성 ──
-  try {
-    const report = await generateManagementReport(today);
-    const docId  = await saveToFirestore(report);
-    results.push({ label: '경영시스템인증', title: report.title, docId });
-    console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
-  } catch (e) {
-    console.error(`  ❌ 경영시스템인증 실패: ${e.message}`);
-    errors.push('경영시스템인증');
-  }
+  for (let i = 0; i < categories.length; i++) {
+    const categoryKey = categories[i];
+    const config = CATEGORY_CONFIGS[categoryKey];
 
-  // Rate limit 방지: 120초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 120초 대기 중...');
-  await sleep(120000);
+    try {
+      const report = await generateCategoryReport(categoryKey, today);
+      const docId  = await saveToFirestore(report);
+      results.push({ label: config.label, title: report.title, docId });
+      console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
+    } catch (e) {
+      console.error(`  ❌ ${config.label} 실패: ${e.message}`);
+      errors.push(config.label);
+    }
 
-  // ── 사이버보안 리포트 생성 ──
-  try {
-    const report = await generateCyberSecurityReport(today);
-    const docId  = await saveToFirestore(report);
-    results.push({ label: '사이버보안', title: report.title, docId });
-    console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
-  } catch (e) {
-    console.error(`  ❌ 사이버보안 실패: ${e.message}`);
-    errors.push('사이버보안');
-  }
-
-  // Rate limit 방지: 180초 대기
-  console.log('\n⏳ Rate limit 방지를 위해 180초 대기 중...');
-  await sleep(180000);
-
-  // ── 제품인증 리포트 생성 ──
-  try {
-    const report = await generateProductCertReport(today);
-    const docId  = await saveToFirestore(report);
-    results.push({ label: '제품인증', title: report.title, docId });
-    console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
-  } catch (e) {
-    console.error(`  ❌ 제품인증 실패: ${e.message}`);
-    errors.push('제품인증');
+    // 다음 카테고리가 있고 sleepTime이 지정되어 있는 경우 대기
+    if (i < categories.length - 1 && config.sleepTime > 0) {
+      console.log(`\n⏳ Rate limit 방지를 위해 ${config.sleepTime / 1000}초 대기 중...`);
+      await sleep(config.sleepTime);
+    }
   }
 
   // ── 결과 요약 ──
