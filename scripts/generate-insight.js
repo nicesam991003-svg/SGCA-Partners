@@ -96,10 +96,7 @@ async function callGemini(systemPrompt, userPrompt) {
       ],
       tools: [
         { googleSearch: {} }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
+      ]
     }
   );
 
