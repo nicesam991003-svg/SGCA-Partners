@@ -90,7 +90,7 @@ async function callGemini(systemPrompt, userPrompt) {
     `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {},
     {
-      system_instruction: { parts: { text: systemPrompt } },
+      system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [
         { role: 'user', parts: [{ text: userPrompt }] }
       ],
@@ -257,11 +257,11 @@ ${config.layout}`;
     return report;
   }
 
-  // 필수 필드 검증
-  const required = ['title', 'titleEn', 'category', 'date', 'desc', 'descEn', 'fullContent', 'fullContentEn'];
+  // 필수 필드 검증 (영문 필드는 누락되거나 빈 문자열이어도 통과하도록 선택 필드로 변경)
+  const required = ['title', 'category', 'date', 'desc', 'fullContent'];
   required.forEach(f => {
     if (!report[f]) {
-      throw new Error(`${config.label} 리포트 필드 누락: ${f}`);
+      throw new Error(`${config.label} 리포트 필수 필드 누락: ${f}`);
     }
   });
 

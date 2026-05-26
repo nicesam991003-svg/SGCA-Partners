@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -67,6 +67,21 @@
                     <label>원문 내용 (보고서 양식 유지 가능)</label>
                     <div id="editor-container" style="height: 350px; background: white;"></div>
                 </div>
+                <div style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px;">
+                    <h4 style="margin-bottom: 15px; color: var(--color-deep-navy);">영문 버전 (선택사항)</h4>
+                    <div class="form-group">
+                        <label>영문 리포트 제목</label>
+                        <input type="text" id="post-title-en" placeholder="Enter english title">
+                    </div>
+                    <div class="form-group">
+                        <label>영문 요약 내용</label>
+                        <textarea id="post-desc-en" placeholder="Enter english summary"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>영문 원문 내용</label>
+                        <div id="editor-container-en" style="height: 350px; background: white;"></div>
+                    </div>
+                </div>
                 <button type="submit" class="btn-submit">새 리포트 등록하기</button>
             </form>
 
@@ -113,14 +128,16 @@
                         case 'product-certification': categoryLabel = '제품인증'; break;
                         default: categoryLabel = '미분류';
                     }
+                    const statusBadge = post.status === 'draft' ? '<span style="color:#f59e0b; font-weight:bold;">[초안]</span>' : '';
                     html += `
                         <div class="admin-item">
                             <div class="admin-item-info">
                                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
                                     <span style="font-size:0.75rem; background:#f0f0f0; padding:2px 8px; border-radius:10px; color:#666;">${categoryLabel}</span>
-                                    <h4 style="margin:0;">${post.title}</h4>
+                                    ${statusBadge}
+                                    <h4 style="margin:0;">${globalEscHtml(post.title)}</h4>
                                 </div>
-                                <p>${post.date} &nbsp;|&nbsp; ${post.desc.substring(0, 40)}...</p>
+                                <p>${post.date || ''} &nbsp;|&nbsp; ${(post.desc || '').substring(0, 40)}...</p>
                             </div>
                             <div style="white-space: nowrap;">
                                 <button type="button" class="btn-edit" data-id="${post.id}">수정</button>
@@ -145,6 +162,9 @@
                         document.getElementById('post-link').value = post.link === '#' ? '' : post.link;
                         document.getElementById('post-desc').value = post.desc;
                         window.quill.root.innerHTML = post.fullContent || '';
+                        document.getElementById('post-title-en').value = post.titleEn || '';
+                        document.getElementById('post-desc-en').value = post.descEn || '';
+                        window.quillEn.root.innerHTML = post.fullContentEn || '';
                         
                         document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
                         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -223,6 +243,21 @@
                     ]
                 }
             });
+
+            window.quillEn = new Quill('#editor-container-en', {
+                theme: 'snow',
+                placeholder: 'Enter english full content here...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'color': [] }, { 'background': [] }],
+                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                        ['link', 'image'],
+                        ['clean']
+                    ]
+                }
+            });
             
             // db 객체가 정상적으로 불러와졌는지 확인 후 실시간 리스너 시작
             if(db) {
@@ -251,11 +286,18 @@
                     fullContent = '';
                 }
 
+                const titleEn = document.getElementById('post-title-en').value;
+                const descEn = document.getElementById('post-desc-en').value;
+                let fullContentEn = window.quillEn.root.innerHTML;
+                if (window.quillEn.getText().trim() === '' && !fullContentEn.includes('<img')) {
+                    fullContentEn = '';
+                }
+
                 try {
                     if (editingId) {
                         // 기존 리포트 수정
                         await db.collection("insights").doc(editingId).update({
-                            title, category, date, link, desc, fullContent
+                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn
                         });
                         alert('인사이트 리포트가 성공적으로 수정되었습니다!');
                         editingId = null;
@@ -263,7 +305,7 @@
                     } else {
                         // 새 리포트 등록
                         await db.collection("insights").add({
-                            title, category, date, link, desc, fullContent, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn, status: 'published', createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         });
                         alert('인사이트 리포트가 성공적으로 등록되었습니다!');
                     }
@@ -271,6 +313,9 @@
                     // 폼 초기화 및 오늘 날짜 재설정
                     this.reset();
                     window.quill.root.innerHTML = '';
+                    window.quillEn.root.innerHTML = '';
+                    document.getElementById('post-title-en').value = '';
+                    document.getElementById('post-desc-en').value = '';
                     document.getElementById('post-date').valueAsDate = new Date();
                 } catch (error) {
                     console.error("문서 저장 중 오류: ", error);

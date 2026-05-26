@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -524,8 +524,8 @@
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
-                            <h3 class="rss-title">${item.titleEn || item.title}</h3>
-                            <p class="rss-desc" style="margin-top: 5px;">${shortDesc}</p>
+                            <h3 class="rss-title">${globalEscHtml(item.titleEn || item.title)}</h3>
+                            <p class="rss-desc" style="margin-top: 5px;">${globalEscHtml(shortDesc)}</p>
                         </div>
                     </div>
                 `;

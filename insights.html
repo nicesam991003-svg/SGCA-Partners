@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -474,7 +474,8 @@
                     dateStr = `${parts[0]}. ${parts[1]}. ${parts[2]}.`;
                 }
 
-                const shortDesc = item.desc.length > 400 ? item.desc.substring(0, 400) + '...' : item.desc;
+                const itemDesc = item.desc || '';
+                const shortDesc = itemDesc.length > 400 ? itemDesc.substring(0, 400) + '...' : itemDesc;
 
                 let categoryBadge = '';
                 switch(item.category) {
@@ -505,8 +506,8 @@
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
-                            <h3 class="rss-title">${item.title}</h3>
-                            <p class="rss-desc" style="margin-top: 5px;">${shortDesc}</p>
+                            <h3 class="rss-title">${globalEscHtml(item.title)}</h3>
+                            <p class="rss-desc" style="margin-top: 5px;">${globalEscHtml(shortDesc)}</p>
                         </div>
                     </div>
                 `;
@@ -581,7 +582,7 @@
             if (item.fullContent) {
                 document.getElementById('modalBody').innerHTML = item.fullContent;
             } else {
-                document.getElementById('modalBody').innerHTML = item.desc.replace(/\n/g, '<br>');
+                document.getElementById('modalBody').innerHTML = (item.desc || '').replace(/\n/g, '<br>');
             }
             
             const linkEl = document.getElementById('modalLink');
