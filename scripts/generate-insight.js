@@ -122,9 +122,14 @@ const CATEGORY_CONFIGS = {
     emoji: '📋',
     step: '1/3',
     role: '경영시스템인증 전문 리서치 어시스턴트',
-    additionalRoleInfo: '웹 검색으로 ISO 경영시스템인증(ISO 9001·14001·45001·13485·19443) 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
-    sources: `- ISO 공식(iso.org), IAF(iaf.nu), KAB(kab.or.kr)
-- ANAB(anab.org), IAS(iasonline.org), UKAS(ukas.com)`,
+    additionalRoleInfo: '웹 검색 시 반드시 아래 지정된 7개 사이트에서만 경영시스템인증 최신 뉴스를 찾아주세요. 일반 언론사나 기타 사이트는 절대 참조하지 마세요.',
+    sources: `- ISO (iso.org)
+- IEC (iec.ch)
+- Global Accreditation Cooperation Incorporated (Global ACI)
+- KAB (kab.or.kr)
+- ANAB (anab.ansi.org)
+- IAS (iasonline.org)
+- UKAS (ukas.com)`,
     titleInstructions: '리포트 제목 (한국어, 구체적)',
     descInstructions: '2~3줄 한국어 요약 (핵심 내용 중심)',
     layout: `<h4>■ 개요</h4><p>뉴스 배경·발표 주체</p>
@@ -132,7 +137,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
 <h4>■ 시사점 및 대응 권고</h4><p>국내 인증기업 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [출처명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 1주일 이내 ISO 경영시스템인증 분야의 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 만약 최근 1주일 이내의 새로운 뉴스가 전혀 없다면, {"skip": true, "reason": "최근 1주일 내 경영시스템인증 신규 뉴스가 없습니다."}를 반환하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 1주일 이내 위 지정된 7개 사이트(ISO, IEC, Global ACI, KAB, ANAB, IAS, UKAS)에 직접 게시된 경영시스템인증 분야의 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 만약 지정된 사이트들에서 최근 1주일 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 1주일 신규 뉴스가 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
   'cyber-security': {
