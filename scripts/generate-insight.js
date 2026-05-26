@@ -145,7 +145,7 @@ const CATEGORY_CONFIGS = {
     emoji: '🔒',
     step: '2/3',
     role: '사이버보안 규제 전문 리서치 어시스턴트',
-    additionalRoleInfo: '웹 검색으로 아래 출처들에서 산업용 제품·의료기기·무선제품·공급망 사이버보안 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
+    additionalRoleInfo: '웹 검색 시 반드시 아래 지정된 출처(유럽, 미국, 한국, 중국, 일본 기관)에서만 사이버보안 최신 뉴스를 찾아주세요. 일반 언론사나 블로그 등 다른 사이트는 절대 참조하지 마세요.',
     sources: `[유럽]
 - European Commission / Digital Excellence and Science Infrastructure (CRA - 사이버 복원력 법, 무선제품·기계·SW)
 - ENISA - europa.eu/enisa (유럽 사이버보안 표준·가이드라인)
@@ -175,7 +175,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 사이버보안 규제·가이드라인·정책 중 SGCA Partners 고객(의료기기·산업기계·무선제품·공급망 분야 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. 반드시 실제 확인된 URL을 link에 포함하세요. 단 최근 2주 이내 의미 있는 뉴스가 없다면, {"skip": true, "reason": "최근 2주 내 사이버보안 신규 소식 없습니다."}를 반환하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 사이버보안 규제·가이드라인·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 사이버보안 신규 소식이 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
   'product-certification': {
@@ -183,7 +183,7 @@ const CATEGORY_CONFIGS = {
     emoji: '🏷️',
     step: '3/3',
     role: '제품인증 전문 리서치 어시스턴트',
-    additionalRoleInfo: '웹 검색으로 아래 출처들에서 기계류 CE/NRTL 인증·방폭(HazLoc/IECEx) 분야의 최신 뉴스 1건을 찾아 아래 구조의 JSON을 반환해 주세요.',
+    additionalRoleInfo: '웹 검색 시 반드시 아래 지정된 출처(EU 기관, OSHA, NRTL, IECEx 등)에서만 제품인증 최신 뉴스를 찾아주세요. 일반 언론사나 기타 사이트는 절대 참조하지 마세요.',
     sources: `[EU 기계류 규정 - Machinery Regulation EU 2023/1230]
 - European Commission Machinery 부문 - ec.europa.eu/growth/sectors/mechanical-engineering
   (법안 원문·공식 가이드라인·전환 일정·Guide to Application 최신 개정판)
@@ -210,7 +210,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
 <h4>■ 국내 수출기업 시사점 및 대응 권고</h4><p>한국 제조·수출 기업의 인증 전략 및 준비 사항</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 출처들에서 발표된 제품인증 관련 규정·표준·정책 중 SGCA Partners 고객(기계류 CE 인증·북미 NRTL 인증·방폭 IECEx 인증을 준비하는 한국 제조·수출 기업)에게 가장 중요한 뉴스 1건을 검색하여 리포트로 작성하세요. EU Machinery Regulation 2023/1230 시행 준비, OSHA NRTL 표준 변경, IECEx 방폭 관련 최신 소식을 우선 확인하세요. 반드시 실제 확인된 URL을 link에 포함하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 제품인증 관련 규정·표준·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. EU Machinery Regulation, OSHA NRTL 표준 변경, IECEx 최신 소식을 우선 확인하며, 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 제품인증 신규 뉴스가 없습니다."}를 반환하세요.`,
     sleepTime: 0
   }
 };
