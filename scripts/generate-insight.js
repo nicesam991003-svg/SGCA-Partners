@@ -96,10 +96,7 @@ async function callGemini(systemPrompt, userPrompt) {
       ],
       tools: [
         { googleSearch: {} }
-      ],
-      generationConfig: {
-        responseMimeType: "application/json"
-      }
+      ]
     }
   );
 
@@ -110,6 +107,11 @@ async function callGemini(systemPrompt, userPrompt) {
   const rawText = res.body.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
   try {
     let cleanText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const firstBrace = cleanText.indexOf('{');
+    const lastBrace = cleanText.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace >= firstBrace) {
+      cleanText = cleanText.substring(firstBrace, lastBrace + 1);
+    }
     return JSON.parse(cleanText);
   } catch (e) {
     throw new Error(`JSON 파싱 실패: ${e.message}\n원문: ${rawText}`);
@@ -248,15 +250,16 @@ ${config.sources}
   "fullContentEn": "English translation of the fullContent HTML"
 }
 
-중요 지침:
-1. 반환 형식은 반드시 파싱 가능한 유효한 JSON 객체여야 합니다. JSON 형식에 어긋나는 어떤 텍스트도 포함하지 마세요.
-2. fullContent 내의 HTML 태그나 속성(예: style 등)에는 절대 큰따옴표(")를 사용하지 말고, 항상 작은따옴표(')를 사용하세요. (예: <p style='font-size:0.85em;color:#6c7a89;'>)
-3. 만약 title, desc, fullContent 등의 문자열 내용 안에 어쩔 수 없이 큰따옴표(")를 사용해야 하는 경우, 반드시 백슬래시로 이스케이프하여 \\" 형태로 출력하세요.
+중요 지침 (CRITICAL):
+1. 반환 형식은 반드시 파싱 가능한 유효한 JSON 객체 하나여야만 합니다.
+2. JSON 형식을 제외한 어떠한 인사말, 설명, 부가 텍스트, Markdown 블록(\`\`\`json 등)도 절대로 포함하지 마세요. 오직 { 로 시작해서 } 로 끝나야 합니다.
+3. fullContent 내의 HTML 태그나 속성(예: style 등)에는 절대 큰따옴표(")를 사용하지 말고, 항상 작은따옴표(')를 사용하세요. (예: <p style='font-size:0.85em;color:#6c7a89;'>)
+4. 만약 title, desc, fullContent 등의 문자열 내용 안에 어쩔 수 없이 큰따옴표(")를 사용해야 하는 경우, 반드시 백슬래시로 이스케이프하여 \\" 형태로 출력하세요.
 
 fullContent HTML 구조:
 ${config.layout}`;
 
-  const userPrompt = config.userPromptTemplate(today) + existingContext;
+  const userPrompt = config.userPromptTemplate(today) + existingContext + "\n\n[CRITICAL WARNING] You MUST return ONLY a valid JSON object starting with { and ending with }. Do not add any conversational text or explanations.";
 
   const report = await callGemini(systemPrompt, userPrompt);
   
