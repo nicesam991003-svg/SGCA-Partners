@@ -235,13 +235,18 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
             try {
-                // Fetch only the latest 3 reports
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(3).get();
+                // Fetch more reports to filter out drafts and show the latest 3 published ones
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(15).get();
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
-                    window.allInsights.push({ id: doc.id, ...doc.data() });
+                    const data = doc.data();
+                    if (data.status !== 'draft') {
+                        window.allInsights.push({ id: doc.id, ...data });
+                    }
                 });
+                
+                window.allInsights = window.allInsights.slice(0, 3);
 
                 if (window.allInsights.length === 0) {
                     container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">No reports available at the moment.</p>';
