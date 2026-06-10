@@ -196,6 +196,9 @@ const CATEGORY_CONFIGS = {
   (기계 안전 조화 표준 A/B/C타입 개정·신규 공표 모니터링)
 핵심 이슈: 2027년 1월 전면 시행·AI 요구사항·사이버보안 의무화·디지털 매뉴얼 의무화
 
+[EU 의료기기 규정]
+- health.ec.europa.eu/medical-devices-sector_en
+
 [미국 NRTL 기계·방폭 인증]
 - OSHA NRTL 프로그램 - osha.gov/nationally-recognized-testing-laboratory
   (Federal Register 표준 추가·삭제·대체 발표, 공식 정책 뉴스)
