@@ -226,7 +226,7 @@ const CATEGORY_CONFIGS = {
 // ─────────────────────────────────────────
 // 6. 카테고리 리포트 생성 통합 함수
 // ─────────────────────────────────────────
-async function generateCategoryReport(categoryKey, today, existingContext = '') {
+async function generateCategoryReport(categoryKey, today, existingContext = '', maxRetries = 3) {
   const config = CATEGORY_CONFIGS[categoryKey];
   if (!config) {
     throw new Error(`지원하지 않는 카테고리입니다: ${categoryKey}`);
@@ -264,23 +264,33 @@ ${config.layout}`;
 
   const userPrompt = config.userPromptTemplate(today) + existingContext + "\n\n[CRITICAL WARNING] You MUST return ONLY a valid JSON object starting with { and ending with }. Do not add any conversational text or explanations.";
 
-  const report = await callGemini(systemPrompt, userPrompt);
-  
-  if (report.skip === true) {
-    console.log(`  ⏭️ 스킵됨: ${report.reason || '신규 뉴스 없음'}`);
-    return report;
-  }
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const report = await callGemini(systemPrompt, userPrompt);
+      
+      if (report.skip === true) {
+        console.log(`  ⏭️ 스킵됨: ${report.reason || '신규 뉴스 없음'}`);
+        return report;
+      }
 
-  // 필수 필드 검증 (영문 필드는 누락되거나 빈 문자열이어도 통과하도록 선택 필드로 변경)
-  const required = ['title', 'category', 'date', 'desc', 'fullContent'];
-  required.forEach(f => {
-    if (!report[f]) {
-      throw new Error(`${config.label} 리포트 필수 필드 누락: ${f}`);
+      // 필수 필드 검증 (영문 필드는 누락되거나 빈 문자열이어도 통과하도록 선택 필드로 변경)
+      const required = ['title', 'category', 'date', 'desc', 'fullContent'];
+      required.forEach(f => {
+        if (!report[f] || String(report[f]).trim() === '') {
+          throw new Error(`필수 필드 누락 또는 빈 값: ${f}`);
+        }
+      });
+
+      console.log(`  ✅ 생성 완료: "${report.title}"`);
+      return report;
+    } catch (e) {
+      if (attempt === maxRetries) {
+        throw new Error(`${config.label} 리포트 필수 필드 누락 및 생성 실패: ${e.message}`);
+      }
+      console.warn(`  ⚠️ 일시적 오류 발생 (${e.message}). ${attempt}번째 재시도 중...`);
+      await sleep(5000); // 5초 대기 후 재시도
     }
-  });
-
-  console.log(`  ✅ 생성 완료: "${report.title}"`);
-  return report;
+  }
 }
 
 // ─────────────────────────────────────────
