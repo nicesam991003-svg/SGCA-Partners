@@ -1,4 +1,4 @@
-﻿html {
+html {
   scroll-padding-top: 120px;
   overflow-x: hidden;
   scroll-behavior: smooth;
@@ -1258,4 +1258,96 @@ nav {
     .insight-modal-body { padding: 20px; }
     .insight-modal-footer { padding: 15px 20px 25px; }
     .insight-modal-header .modal-title { font-size: 1.3rem; }
+}
+
+/* --- Filter and Search Bar --- */
+.insight-filter-container {
+    background-color: var(--color-crisp-white);
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+}
+
+.filter-tabs {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+}
+
+.filter-tabs::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+}
+
+.filter-tab {
+    padding: 8px 18px;
+    border-radius: 50px;
+    background-color: #f4f6f9;
+    color: var(--color-slate-grey);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+    background-color: #e2e6ea;
+    color: var(--color-deep-navy);
+}
+
+.filter-tab.active {
+    background-color: var(--color-deep-navy);
+    color: var(--color-crisp-white);
+    border-color: var(--color-deep-navy);
+}
+
+.search-container {
+    position: relative;
+    width: 280px;
+    flex-shrink: 0;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 16px 10px 42px;
+    border: 1.5px solid #d1d8e0;
+    border-radius: 50px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.search-input:focus {
+    border-color: var(--color-accent);
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: #8892b0;
+}
+
+@media (max-width: 992px) {
+    .insight-filter-container {
+        flex-direction: column;
+        align-items: stretch;
+        padding: 16px;
+        gap: 16px;
+    }
+    .search-container {
+        width: 100%;
+    }
 }

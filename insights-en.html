@@ -87,6 +87,22 @@
     <!-- Insight Reports Section -->
     <section class="insight-content-section">
         <div class="container">
+            <!-- Filter and Search Container -->
+            <div class="insight-filter-container" id="insight-filter">
+                <div class="filter-tabs">
+                    <button class="filter-tab active" onclick="setCategory('all', this)">All</button>
+                    <button class="filter-tab" onclick="setCategory('management-system', this)">Management System</button>
+                    <button class="filter-tab" onclick="setCategory('cyber-security', this)">Cyber Security</button>
+                    <button class="filter-tab" onclick="setCategory('product-certification', this)">Product Certification</button>
+                </div>
+                <div class="search-container">
+                    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" id="insight-search" class="search-input" placeholder="Search keywords (e.g., FDA, ISO)">
+                </div>
+            </div>
+
             <div class="report-html-container" id="rss-feed-container">
                 <div class="loading-text">Loading latest reports...</div>
             </div>
@@ -469,6 +485,15 @@
     <script defer src="js/firebase-init.js?v=1.1"></script>
     <script>
         let allInsights = [];
+        let currentCategory = 'all';
+        let searchKeyword = '';
+
+        window.setCategory = function(cat, btnElement) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
+            if(btnElement) btnElement.classList.add('active');
+            renderInsightCards(3);
+        };
 
         window.renderInsightCards = function(count) {
             const container = document.getElementById('rss-feed-container');
@@ -482,16 +507,27 @@
                 return;
             }
 
-            if (allInsights.length === 0) {
+            const filteredInsights = allInsights.filter(item => {
+                const matchCategory = currentCategory === 'all' || item.category === currentCategory;
+                const searchStr = searchKeyword.trim().toLowerCase();
+                const titleToSearch = item.titleEn || item.title || '';
+                const descToSearch = item.descEn || item.desc || '';
+                const matchSearch = searchStr === '' || 
+                                    titleToSearch.toLowerCase().includes(searchStr) || 
+                                    descToSearch.toLowerCase().includes(searchStr);
+                return matchCategory && matchSearch;
+            });
+
+            if (filteredInsights.length === 0) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 60px 0;">
-                        <div class="loading-text" style="color: #6c7a89; margin-bottom: 20px; padding: 0;">No reports available at the moment.</div>
+                        <div class="loading-text" style="color: #6c7a89; margin-bottom: 20px; padding: 0;">${allInsights.length === 0 ? 'No reports available at the moment.' : 'No reports found matching your criteria.'}</div>
                     </div>
                 `;
                 return;
             }
 
-            const displayItems = allInsights.slice(0, count);
+            const displayItems = filteredInsights.slice(0, count);
             let html = '<div class="rss-grid">';
             
             displayItems.forEach(item => {
@@ -542,7 +578,7 @@
             
             html += '</div>';
 
-            if (allInsights.length > count) {
+            if (filteredInsights.length > count) {
                 html += `
                     <div style="text-align: center; margin-top: 50px;">
                         <button onclick="renderInsightCards(${count + 3})" style="background-color: transparent; color: var(--color-deep-navy); border: 2px solid var(--color-deep-navy); padding: 12px 40px; border-radius: 4px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-deep-navy)'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-deep-navy)';">
@@ -559,6 +595,14 @@
             if (!db) {
                 renderInsightCards(3);
                 return;
+            }
+
+            const searchInput = document.getElementById('insight-search');
+            if(searchInput) {
+                searchInput.addEventListener('input', function(e) {
+                    searchKeyword = e.target.value;
+                    renderInsightCards(3);
+                });
             }
 
             const container = document.getElementById('rss-feed-container');
