@@ -551,10 +551,10 @@
             currentCategory = cat;
             document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
             if(btnElement) btnElement.classList.add('active');
-            renderInsightCards(3);
+            renderInsightCards(6);
         };
 
-        window.renderInsightCards = function(count) {
+        window.renderInsightCards = function(count = 6) {
             const container = document.getElementById('rss-feed-container');
             
             if (!db) {
@@ -584,7 +584,10 @@
                 return;
             }
 
-            const displayItems = filteredInsights.slice(0, count);
+            const isDefaultState = currentCategory === 'all' && searchKeyword.trim() === '';
+            const effectiveCount = isDefaultState ? count : filteredInsights.length;
+            const displayItems = filteredInsights.slice(0, effectiveCount);
+            
             let html = '<div class="rss-grid">';
             
             displayItems.forEach(item => {
@@ -635,10 +638,10 @@
             
             html += '</div>';
 
-            if (filteredInsights.length > count) {
+            if (isDefaultState && filteredInsights.length > effectiveCount) {
                 html += `
                     <div style="text-align: center; margin-top: 50px;">
-                        <button onclick="renderInsightCards(${count + 3})" style="background-color: transparent; color: var(--color-deep-navy); border: 2px solid var(--color-deep-navy); padding: 12px 40px; border-radius: 4px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-deep-navy)'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-deep-navy)';">
+                        <button onclick="renderInsightCards(${effectiveCount + 6})" style="background-color: transparent; color: var(--color-deep-navy); border: 2px solid var(--color-deep-navy); padding: 12px 40px; border-radius: 4px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-deep-navy)'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-deep-navy)';">
                             더보기 ▾
                         </button>
                     </div>
@@ -650,7 +653,7 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             if (!db) {
-                renderInsightCards(3);
+                renderInsightCards(6);
                 return;
             }
 
@@ -661,7 +664,7 @@
                     clearTimeout(searchTimeout);
                     searchTimeout = setTimeout(() => {
                         searchKeyword = e.target.value;
-                        renderInsightCards(3);
+                        renderInsightCards(6);
                     }, 150);
                 });
             }
@@ -685,8 +688,8 @@
                     }
                 });
 
-                // 처음 로드될 때는 3개, 이후에는 기존 렌더링된 카드 수 유지
-                const currentCount = document.querySelectorAll('.rss-card').length || 3;
+                // 처음 로드될 때는 6개, 이후에는 기존 렌더링된 카드 수 유지
+                const currentCount = document.querySelectorAll('.rss-card').length || 6;
                 renderInsightCards(currentCount);
 
                 // 관리자 모드 활성화 시 관리자 섹션 렌더링
