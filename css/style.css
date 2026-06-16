@@ -938,6 +938,11 @@ nav {
         grid-template-columns: 1fr;
     }
 }
+@keyframes cardFadeSlideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
 .rss-card {
     background: var(--color-crisp-white);
     border-radius: 8px;
@@ -950,6 +955,7 @@ nav {
     display: flex;
     flex-direction: column;
     height: 100%;
+    animation: cardFadeSlideUp 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 .rss-card:hover {
     transform: translateY(-5px);

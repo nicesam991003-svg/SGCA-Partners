@@ -527,6 +527,13 @@
         let currentCategory = 'all';
         let searchKeyword = '';
 
+        function highlightText(text, keyword) {
+            const escaped = globalEscHtml(text);
+            if (!keyword || keyword.trim() === '') return escaped;
+            const regex = new RegExp('(' + keyword.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + ')', 'gi');
+            return escaped.replace(regex, '<mark style="background-color: rgba(253, 224, 71, 0.6); color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+        }
+
         window.setCategory = function(cat, btnElement) {
             currentCategory = cat;
             document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
@@ -606,8 +613,8 @@
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
-                            <h3 class="rss-title">${globalEscHtml(item.title)}</h3>
-                            <p class="rss-desc" style="margin-top: 5px;">${globalEscHtml(shortDesc)}</p>
+                            <h3 class="rss-title">${highlightText(item.title, searchKeyword)}</h3>
+                            <p class="rss-desc" style="margin-top: 5px;">${highlightText(shortDesc, searchKeyword)}</p>
                         </div>
                     </div>
                 `;
@@ -635,10 +642,14 @@
             }
 
             const searchInput = document.getElementById('insight-search');
+            let searchTimeout;
             if(searchInput) {
                 searchInput.addEventListener('input', function(e) {
-                    searchKeyword = e.target.value;
-                    renderInsightCards(3);
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        searchKeyword = e.target.value;
+                        renderInsightCards(3);
+                    }, 150);
                 });
             }
 
