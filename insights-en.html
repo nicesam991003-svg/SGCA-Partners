@@ -90,10 +90,10 @@
             <!-- Filter and Search Container -->
             <div class="insight-filter-container" id="insight-filter">
                 <div class="filter-tabs">
-                    <button class="filter-tab active" onclick="setCategory('all', this)">All</button>
-                    <button class="filter-tab" onclick="setCategory('management-system', this)">Management System</button>
-                    <button class="filter-tab" onclick="setCategory('cyber-security', this)">Cyber Security</button>
-                    <button class="filter-tab" onclick="setCategory('product-certification', this)">Product Certification</button>
+                    <button class="filter-tab active" data-cat="all" onclick="setCategory('all', this)">All</button>
+                    <button class="filter-tab" data-cat="management-system" onclick="setCategory('management-system', this)">Management System</button>
+                    <button class="filter-tab" data-cat="cyber-security" onclick="setCategory('cyber-security', this)">Cyber Security</button>
+                    <button class="filter-tab" data-cat="product-certification" onclick="setCategory('product-certification', this)">Product Certification</button>
                 </div>
                 <div class="search-container">
                     <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -106,8 +106,20 @@
             <style>
                 .insight-filter-container { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 30px; align-items: center; justify-content: space-between; }
                 .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
-                .filter-tab { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 20px; background: #fff; cursor: pointer; font-size: 0.9rem; color: #4b5563; transition: all 0.2s; }
-                .filter-tab.active { background: var(--color-deep-navy); color: #fff; border-color: var(--color-deep-navy); }
+                .filter-tab { display: flex; align-items: center; gap: 6px; padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 20px; background: #fff; cursor: pointer; font-size: 0.9rem; color: #4b5563; transition: all 0.2s; }
+                .filter-tab::before { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; transition: all 0.2s; }
+                
+                .filter-tab[data-cat="all"]::before { background-color: #9ca3af; }
+                .filter-tab[data-cat="management-system"]::before { background-color: #3b82f6; }
+                .filter-tab[data-cat="cyber-security"]::before { background-color: #8b5cf6; }
+                .filter-tab[data-cat="product-certification"]::before { background-color: #f97316; }
+
+                .filter-tab[data-cat="all"].active { background: var(--color-deep-navy); border-color: var(--color-deep-navy); color: #fff; font-weight: 600; }
+                .filter-tab[data-cat="all"].active::before { background-color: #fff; }
+
+                .filter-tab[data-cat="management-system"].active { background: #eff6ff; border-color: #3b82f6; color: #1d4ed8; font-weight: 600; }
+                .filter-tab[data-cat="cyber-security"].active { background: #f5f3ff; border-color: #8b5cf6; color: #6d28d9; font-weight: 600; }
+                .filter-tab[data-cat="product-certification"].active { background: #fff7ed; border-color: #f97316; color: #c2410c; font-weight: 600; }
                 .search-container { position: relative; display: flex; align-items: center; }
                 .search-input { padding: 8px 16px 8px 40px; border: 1px solid #e5e7eb; border-radius: 20px; width: 250px; font-size: 0.9rem; }
                 .search-icon { position: absolute; left: 12px; width: 18px; height: 18px; color: #9ca3af; }
