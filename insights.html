@@ -546,7 +546,8 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">최신 리포트를 불러오는 중입니다...</div>';
 
-            db.collection("insights").orderBy("date", "desc").limit(30).onSnapshot((querySnapshot) => {
+            // 근본 원인 해결: 초안이 많아질 경우 게시된 글이 limit에 밀려 짤리는 현상을 방지하기 위해 전체를 불러와 필터링
+            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
                 allInsights = [];
                 allDrafts = [];
                 allPublished = [];
