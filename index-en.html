@@ -250,8 +250,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
             try {
-                // 서버에서 직접 최신 데이터를 가져오도록 강제 (캐시 문제 방지)
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get({ source: 'server' });
+                // 서버 캐시 이슈는 메타태그로 해결했으므로 일반 get() 사용
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
