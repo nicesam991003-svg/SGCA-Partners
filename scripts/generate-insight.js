@@ -136,7 +136,7 @@ const CATEGORY_CONFIGS = {
 - IAS (iasonline.org)
 - UKAS (ukas.com)`,
     titleInstructions: '리포트 제목 (한국어, 구체적)',
-    descInstructions: '2~3줄 한국어 요약 (핵심 내용 중심)',
+    descInstructions: '핵심 키워드(ISO, 규격명, 인증 등)를 포함하여 2~3줄 한국어 요약 (검색에 잘 걸리도록)',
     layout: `<h4>■ 개요</h4><p>뉴스 배경·발표 주체</p>
 <h4>■ 주요 내용</h4><ul><li>핵심 변경/발표 항목</li></ul>
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
@@ -174,7 +174,7 @@ const CATEGORY_CONFIGS = {
 - PMDA - pmda.go.jp (의료기기 사이버보안)
 - METI(경제산업성) - meti.go.jp (산업기계·공장자동화·IoT 보안)`,
     titleInstructions: '리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 포함)',
-    descInstructions: '2~3줄 한국어 요약 (핵심 내용·영향 중심)',
+    descInstructions: '핵심 키워드(관련 기관, 규제명, 사이버보안 등)를 포함하여 2~3줄 한국어 요약 (검색에 잘 걸리도록 핵심 내용·영향 중심)',
     layout: `<h4>■ 개요</h4><p>발표 기관·배경·규제 대상 범위</p>
 <h4>■ 주요 내용</h4><ul><li>핵심 요구사항·변경사항 항목별 기술</li></ul>
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
@@ -212,7 +212,7 @@ const CATEGORY_CONFIGS = {
   (전 세계 방폭·공정안전 전문 미디어, IEC TC 31 칼럼, 방폭 사고 분석, IECEx 가이드라인 해설)
 핵심 이슈: 수소(Hydrogen) 생태계 확장에 따른 방폭 표준 변화·IEC 60079-19 유지보수 규격 업데이트`,
     titleInstructions: '리포트 제목 (한국어, 구체적·명확하게, 발표 기관명 및 표준번호 포함)',
-    descInstructions: '2~3줄 한국어 요약 (핵심 변경 내용·영향 범위 중심)',
+    descInstructions: '핵심 키워드(FDA, NRTL, 인증, 규격명 등)를 포함하여 2~3줄 한국어 요약 (검색에 잘 걸리도록 핵심 변경 내용·영향 범위 중심)',
     layout: `<h4>■ 개요</h4><p>발표 기관·규정·표준의 배경 및 발표 경위</p>
 <h4>■ 주요 내용</h4><ul><li>핵심 요구사항·표준 변경·인증 절차 변경 항목별 기술</li></ul>
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
