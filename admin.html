@@ -304,11 +304,11 @@
 
                 try {
                     if (editingId) {
-                        // 기존 리포트 수정
+                        // 기존 리포트 수정 (초안 승인 효과 포함)
                         await db.collection("insights").doc(editingId).update({
-                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn
+                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn, status: 'published'
                         });
-                        alert('인사이트 리포트가 성공적으로 수정되었습니다!');
+                        alert('인사이트 리포트가 성공적으로 수정 및 게시되었습니다!');
                         editingId = null;
                         document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
                     } else {
