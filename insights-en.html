@@ -103,6 +103,16 @@
                 </div>
             </div>
 
+            <style>
+                .insight-filter-container { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 30px; align-items: center; justify-content: space-between; }
+                .filter-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+                .filter-tab { padding: 8px 16px; border: 1px solid #e5e7eb; border-radius: 20px; background: #fff; cursor: pointer; font-size: 0.9rem; color: #4b5563; transition: all 0.2s; }
+                .filter-tab.active { background: var(--color-deep-navy); color: #fff; border-color: var(--color-deep-navy); }
+                .search-container { position: relative; display: flex; align-items: center; }
+                .search-input { padding: 8px 16px 8px 40px; border: 1px solid #e5e7eb; border-radius: 20px; width: 250px; font-size: 0.9rem; }
+                .search-icon { position: absolute; left: 12px; width: 18px; height: 18px; color: #9ca3af; }
+            </style>
+
             <div class="report-html-container" id="rss-feed-container">
                 <div class="loading-text">Loading latest reports...</div>
             </div>
