@@ -180,7 +180,7 @@
             </div>
             
             <div style="text-align: center; margin-top: 50px;">
-                <a href="insights-en.html?v=2" style="display: inline-block; padding: 12px 30px; border: 2px solid var(--color-accent); color: var(--color-accent); font-weight: 600; border-radius: 4px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-accent)'; this.style.color='var(--color-deep-navy)';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-accent)';">
+                <a href="insights-en.html?v=3" style="display: inline-block; padding: 12px 30px; border: 2px solid var(--color-accent); color: var(--color-accent); font-weight: 600; border-radius: 4px; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-accent)'; this.style.color='var(--color-deep-navy)';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-accent)';">
                     View All Insights
                 </a>
             </div>
@@ -242,8 +242,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
             try {
-                // Fetch more reports to filter out drafts and show the latest 3 published ones
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(15).get();
+                // 근본 원인 해결: 초안이 많아지면 게시된 글이 limit에 밀려 짤리는 현상을 방지하기 위해 전체를 불러와 필터링
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
