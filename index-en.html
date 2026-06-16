@@ -242,8 +242,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
             try {
-                // 근본 원인 해결: 초안이 많아지면 게시된 글이 limit에 밀려 짤리는 현상을 방지하기 위해 전체를 불러와 필터링
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
+                // 근본 원인 해결: 전체 문서를 불러오지 않고 최신 30개만 불러와서 네트워크 페이로드 최소화 (로딩 속도 개선)
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(30).get();
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
