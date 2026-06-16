@@ -244,8 +244,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">최신 리포트를 불러오는 중입니다...</p>';
 
             try {
-                // 근본 원인 해결: 전체 문서를 불러오지 않고 최신 30개만 불러와서 네트워크 페이로드 최소화 (로딩 속도 개선)
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(30).get();
+                // 초안(Draft)이 많을 경우를 대비해 넉넉히 최신 150개를 불러와서 필터링 (완전 전체 호출보다는 빠름)
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(150).get();
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
