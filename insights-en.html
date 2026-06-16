@@ -489,10 +489,23 @@
         let searchKeyword = '';
 
         function highlightText(text, keyword) {
-            const escaped = globalEscHtml(text);
-            if (!keyword || keyword.trim() === '') return escaped;
-            const regex = new RegExp('(' + keyword.trim().replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + ')', 'gi');
-            return escaped.replace(regex, '<mark style="background-color: rgba(253, 224, 71, 0.6); color: inherit; padding: 0 2px; border-radius: 2px;">$1</mark>');
+            if (!text) return '';
+            if (!keyword || keyword.trim() === '') return globalEscHtml(text);
+            
+            const cleanKeyword = keyword.trim();
+            const regex = new RegExp('(' + cleanKeyword.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&') + ')', 'gi');
+            
+            // Split the original text by the regex (matched strings are included in the array)
+            const parts = text.split(regex);
+            
+            return parts.map((part, index) => {
+                // Odd indices are the matched original keyword (preserves case)
+                if (index % 2 === 1) {
+                    return '<mark style="background-color: rgba(253, 224, 71, 0.6); color: inherit; padding: 0 2px; border-radius: 2px;">' + globalEscHtml(part) + '</mark>';
+                } else {
+                    return globalEscHtml(part);
+                }
+            }).join('');
         }
 
         window.setCategory = function(cat, btnElement) {
