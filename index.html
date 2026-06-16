@@ -19,8 +19,13 @@
     <meta property="og:type" content="website">
     <meta name="naver-site-verification" content="f9b38f7cc4eb14cab1322c63571aff65074cfc2a" />
     <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="css/style.css?v=1.1">
@@ -246,8 +251,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">최신 리포트를 불러오는 중입니다...</p>';
 
             try {
-                // 초안(Draft)이 많을 경우를 대비해 넉넉히 최신 150개를 불러와서 필터링 (완전 전체 호출보다는 빠름)
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(150).get();
+                // 서버에서 직접 최신 데이터를 가져오도록 강제 (캐시 문제 방지)
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get({ source: 'server' });
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
@@ -257,11 +262,14 @@
                     }
                 });
                 
-                // 앞에서부터 3개만 표시
                 window.allInsights = window.allInsights.slice(0, 3);
 
                 if (window.allInsights.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다.</p>';
+                    if (querySnapshot.empty) {
+                        container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다. (서버 응답: 0개)</p>';
+                    } else {
+                        container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">현재 등록된 최신 리포트가 없습니다. (모든 리포트가 초안 상태입니다)</p>';
+                    }
                     return;
                 }
 

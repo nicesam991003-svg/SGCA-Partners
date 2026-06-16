@@ -10,6 +10,9 @@
     <link rel="apple-touch-icon" href="images/favicon.png">
     
     <!-- Social Share (Open Graph) Meta Tags -->
+    <link rel="apple-touch-icon" href="images/favicon.png">
+    
+    <!-- Social Share (Open Graph) Meta Tags -->
     <meta property="og:title" content="SGCA Partners | Smart Choice for Global Compliance">
     <meta property="og:description" content="SGCA Partners is a 'Risk Management' specialist firm based on global standards, providing professional conformity assessment consulting.">
     <meta property="og:image" content="images/og-image.png">
@@ -17,8 +20,13 @@
     <meta property="og:type" content="website">
     <meta name="naver-site-verification" content="f9b38f7cc4eb14cab1322c63571aff65074cfc2a" />
     <meta name="twitter:card" content="summary_large_image">
+
+    <!-- Cache Control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="css/style.css?v=1.1">
@@ -242,8 +250,8 @@
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
             try {
-                // 초안(Draft)이 많을 경우를 대비해 넉넉히 최신 150개를 불러와서 필터링 (완전 전체 호출보다는 빠름)
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").limit(150).get();
+                // 서버에서 직접 최신 데이터를 가져오도록 강제 (캐시 문제 방지)
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get({ source: 'server' });
                 
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
@@ -256,7 +264,11 @@
                 window.allInsights = window.allInsights.slice(0, 3);
 
                 if (window.allInsights.length === 0) {
-                    container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">No reports available at the moment.</p>';
+                    if (querySnapshot.empty) {
+                        container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">No reports available at the moment. (Server returned 0 reports)</p>';
+                    } else {
+                        container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">No reports available at the moment. (All reports are in draft state)</p>';
+                    }
                     return;
                 }
 
