@@ -371,6 +371,7 @@
                     try {
                         await db.collection("insights").doc(id).update({ status: 'published' });
                         alert("게시 완료! 리포트가 인사이트 페이지에 표시됩니다.");
+                        await window.fetchInsightsAndRender();
                     } catch(e) {
                         console.error(e);
                         alert("게시 중 오류가 발생했습니다.");
@@ -383,6 +384,7 @@
                     try {
                         await db.collection("insights").doc(id).delete();
                         alert("삭제 완료되었습니다.");
+                        await window.fetchInsightsAndRender();
                     } catch(e) {
                         console.error(e);
                         alert("삭제 중 오류가 발생했습니다.");
@@ -651,7 +653,39 @@
             container.innerHTML = html;
         };
 
-        document.addEventListener('DOMContentLoaded', function() {
+        window.fetchInsightsAndRender = async function() {
+            const container = document.getElementById('rss-feed-container');
+            try {
+                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
+                allInsights = [];
+                allDrafts = [];
+                allPublished = [];
+
+                querySnapshot.forEach((doc) => {
+                    const d = { id: doc.id, ...doc.data() };
+                    if (d.status === 'draft') {
+                        allDrafts.push(d);
+                    } else {
+                        allInsights.push(d);
+                        allPublished.push(d);
+                    }
+                });
+
+                // 처음 로드될 때는 6개, 이후에는 기존 렌더링된 카드 수 유지
+                const currentCount = document.querySelectorAll('.rss-card').length || 6;
+                renderInsightCards(currentCount);
+
+                if (isAdminMode) {
+                    renderDraftSection();
+                    renderPublishedManageSection();
+                }
+            } catch (error) {
+                console.error("데이터 로드 실패: ", error);
+                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async function() {
             if (!db) {
                 renderInsightCards(6);
                 return;
@@ -672,35 +706,7 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">최신 리포트를 불러오는 중입니다...</div>';
 
-            // 근본 원인 해결: 초안이 많아질 경우 게시된 글이 limit에 밀려 짤리는 현상을 방지하기 위해 전체를 불러와 필터링
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
-                allInsights = [];
-                allDrafts = [];
-                allPublished = [];
-
-                querySnapshot.forEach((doc) => {
-                    const d = { id: doc.id, ...doc.data() };
-                    if (d.status === 'draft') {
-                        allDrafts.push(d);
-                    } else {
-                        allInsights.push(d);
-                        allPublished.push(d);
-                    }
-                });
-
-                // 처음 로드될 때는 6개, 이후에는 기존 렌더링된 카드 수 유지
-                const currentCount = document.querySelectorAll('.rss-card').length || 6;
-                renderInsightCards(currentCount);
-
-                // 관리자 모드 활성화 시 관리자 섹션 렌더링
-                if (isAdminMode) {
-                    renderDraftSection();
-                    renderPublishedManageSection();
-                }
-            }, (error) => {
-                console.error("데이터 로드 실패: ", error);
-                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
-            });
+            await window.fetchInsightsAndRender();
         });
 
         window.openInsightModal = function(id) {
