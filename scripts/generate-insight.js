@@ -150,9 +150,12 @@ const CATEGORY_CONFIGS = {
     emoji: '🔒',
     step: '2/3',
     role: '사이버보안 규제 전문 리서치 어시스턴트',
-    additionalRoleInfo: '웹 검색 시 반드시 아래 지정된 출처(유럽, 미국, 한국, 중국, 일본 기관)에서만 사이버보안 최신 뉴스를 찾아주세요. 일반 언론사나 블로그 등 다른 사이트는 절대 참조하지 마세요.',
-    sources: `[유럽]
-- European Commission / Digital Excellence and Science Infrastructure (CRA - 사이버 복원력 법, 무선제품·기계·SW)
+    additionalRoleInfo: '웹 검색 시 반드시 아래 지정된 출처(국제, 유럽, 미국, 한국, 중국, 일본 기관)에서만 사이버보안 최신 뉴스를 찾아주세요. 일반 언론사나 블로그 등 다른 사이트는 절대 참조하지 마세요.',
+    sources: `[국제]
+- IEC Cybersecurity - www.iec.ch/cyber-security (국제 사이버보안 표준 및 정책)
+
+[유럽]
+- European Commission (CRA - 사이버 복원력 법) - digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act
 - ENISA - europa.eu/enisa (유럽 사이버보안 표준·가이드라인)
 - MDCG - health.ec.europa.eu (의료기기 MDR 사이버보안)
 
@@ -180,7 +183,7 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 사이버보안 규제·가이드라인·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 사이버보안 신규 소식이 없습니다."}를 반환하세요.`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 사이버보안 규제·가이드라인·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 특히 **European Commission CRA (digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act)**와 **IEC Cybersecurity (www.iec.ch/cyber-security)**에 게시된 최신 뉴스를 최우선으로 검색하고, 해당 사이트에 신규 뉴스가 있다면 우선적으로 리포트를 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 사이버보안 신규 소식이 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
   'product-certification': {
