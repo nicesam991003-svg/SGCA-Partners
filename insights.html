@@ -665,32 +665,40 @@
             container.innerHTML = html;
         };
 
-        window.fetchInsightsAndRender = async function() {
+        let insightsUnsubscribe = null;
+        window.fetchInsightsAndRender = function() {
             const container = document.getElementById('rss-feed-container');
+            if (insightsUnsubscribe) {
+                insightsUnsubscribe();
+            }
             try {
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
-                allInsights = [];
-                allDrafts = [];
-                allPublished = [];
+                insightsUnsubscribe = db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+                    allInsights = [];
+                    allDrafts = [];
+                    allPublished = [];
 
-                querySnapshot.forEach((doc) => {
-                    const d = { id: doc.id, ...doc.data() };
-                    if (d.status === 'draft') {
-                        allDrafts.push(d);
-                    } else {
-                        allInsights.push(d);
-                        allPublished.push(d);
+                    querySnapshot.forEach((doc) => {
+                        const d = { id: doc.id, ...doc.data() };
+                        if (d.status === 'draft') {
+                            allDrafts.push(d);
+                        } else {
+                            allInsights.push(d);
+                            allPublished.push(d);
+                        }
+                    });
+
+                    // 처음 로드될 때는 6개, 이후에는 기존 렌더링된 카드 수 유지
+                    const currentCount = document.querySelectorAll('.rss-card').length || 6;
+                    renderInsightCards(currentCount);
+
+                    if (isAdminMode) {
+                        renderDraftSection();
+                        renderPublishedManageSection();
                     }
+                }, (error) => {
+                    console.error("데이터 로드 실패: ", error);
+                    container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
                 });
-
-                // 처음 로드될 때는 6개, 이후에는 기존 렌더링된 카드 수 유지
-                const currentCount = document.querySelectorAll('.rss-card').length || 6;
-                renderInsightCards(currentCount);
-
-                if (isAdminMode) {
-                    renderDraftSection();
-                    renderPublishedManageSection();
-                }
             } catch (error) {
                 console.error("데이터 로드 실패: ", error);
                 container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;

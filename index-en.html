@@ -247,10 +247,7 @@
 
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
-            try {
-                // 서버 캐시 이슈는 메타태그로 해결했으므로 일반 get() 사용
-                const querySnapshot = await db.collection("insights").orderBy("date", "desc").get();
-                
+            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
@@ -320,10 +317,10 @@
                 
                 html += '</div>';
                 container.innerHTML = html;
-            } catch (error) {
+            }, (error) => {
                 console.error("Data load failure: ", error);
                 container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">Error loading reports. Please check console.</p>`;
-            }
+            });
         });
 
         window.openInsightModal = function(id) {
