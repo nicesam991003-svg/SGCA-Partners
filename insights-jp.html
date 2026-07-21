@@ -22,7 +22,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
 
-                            <!-- SEO & Localization -->
+                                            <!-- SEO & Localization -->
     <link rel="canonical" href="https://sgca-partners.com/insights-jp.html">
     <link rel="alternate" hreflang="ko" href="https://sgca-partners.com/insights.html">
     <link rel="alternate" hreflang="en" href="https://sgca-partners.com/insights-en.html">
@@ -42,7 +42,7 @@
                         <a href="company-intro-jp.html" class="nav-link no-drop">会社紹介</a>
                     </li>
                     <li class="nav-item">
-                        <a href="management-system-jp.html" class="nav-link">マネジメントシステム</a>
+                        <a href="management-system-jp.html" class="nav-link">マネジメントシステム認証</a>
                         <div class="dropdown-menu">
                             <a href="management-system-en.html#iso9001" class="dropdown-link">ISO 9001（品質）</a>
                             <a href="management-system-en.html#iso14001" class="dropdown-link">ISO 14001（環境）</a>
@@ -71,7 +71,7 @@
                     <li class="nav-item"><a href="insights-jp.html" class="nav-link active">インサイト</a></li>
                 </ul>
             </nav>
-                                                                                                <div class="language-selector">
+                                                                                                                                                <div class="language-selector">
                 <a href="insights.html" class="lang-btn">KR</a> | 
                 <a href="insights-en.html" class="lang-btn">EN</a> | 
                 <a href="insights-jp.html" class="lang-btn active">JP</a> | 
@@ -83,17 +83,17 @@
     <section class="insight-header">
         <div class="container">
             <h1 class="insight-title">最新の規制トレンド</h1>
-            <p class="insight-desc">Explore the latest regulatory trends and expert analysis reports across key global industries.</p>
+            <p class="insight-desc">世界の主要産業における最新の規制動向と専門家による分析レポートをご覧いただけます。</p>
         </div>
     </section>
 
     <!-- Insight Reports Section -->
     <section class="insight-content-section">
         <div class="container">
-            <!-- Filter and 検索 Container -->
+            <!-- Filter and Search Container -->
             <div class="insight-filter-container" id="insight-filter">
                 <div class="filter-tabs">
-                    <button class="filter-tab active" data-cat="all" onclick="setCategory('all', this)">すべて</button>
+                    <button class="filter-tab active" data-cat="all" onclick="setCategory('all', this)">All</button>
                     <button class="filter-tab" data-cat="management-system" onclick="setCategory('management-system', this)">Management System</button>
                     <button class="filter-tab" data-cat="cyber-security" onclick="setCategory('cyber-security', this)">Cyber Security</button>
                     <button class="filter-tab" data-cat="product-certification" onclick="setCategory('product-certification', this)">製品認証</button>
@@ -102,7 +102,7 @@
                     <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    <input type="text" id="insight-search" class="search-input" placeholder="検索 keywords (e.g., FDA, ISO)">
+                    <input type="text" id="insight-search" class="search-input" placeholder="検索キーワード (例: FDA, ISO)">
                 </div>
             </div>
 
@@ -129,7 +129,7 @@
             </style>
 
             <div class="report-html-container" id="rss-feed-container">
-                <div class="loading-text">最新のレポートを読み込んでいます...</div>
+                <div class="loading-text">Loading latest reports...</div>
             </div>
 
             <!-- Admin Entry Button -->
@@ -139,36 +139,36 @@
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
-                    Register New Report (Admin)
+                    新規レポート登録 (管理者)
                 </button>
             </div>
 
-            <!-- ★ Draft Reports Section (visible after admin login) -->
+            <!-- ★ 下書きレポート Section (visible after admin login) -->
             <div id="draft-section" style="display:none; margin-top: 48px;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
-                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">Draft Reports</h2>
+                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">下書きレポート</h2>
                     </div>
                     <span id="draft-count-badge" style="background:#fef3c7; color:#92400e; font-size:0.78rem; font-weight:600; padding:2px 10px; border-radius:20px; border:1px solid #fcd34d;"></span>
-                    <span style="font-size:0.85rem; color:#6c7a89; margin-left:4px;">Not yet published. Review and publish when ready.</span>
+                    <span style="font-size:0.85rem; color:#6c7a89; margin-left:4px;">まだ公開されていません。準備ができたら確認して公開してください。</span>
                 </div>
                 <div id="draft-feed-container">
                     <div class="loading-text">Loading draft reports...</div>
                 </div>
             </div>
 
-            <!-- ★ Published Reports Management Section (visible after admin login) -->
+            <!-- ★ 公開済みレポート Management Section (visible after admin login) -->
             <div id="published-manage-section" style="display:none; margin-top: 48px;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#10b981;"></span>
-                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">Published Reports</h2>
+                        <h2 style="font-size:1.15rem; font-weight:700; color:var(--color-deep-navy); margin:0;">公開済みレポート</h2>
                     </div>
                     <span id="published-count-badge" style="background:#d1fae5; color:#065f46; font-size:0.78rem; font-weight:600; padding:2px 10px; border-radius:20px; border:1px solid #6ee7b7;"></span>
                 </div>
                 <div id="published-manage-container">
-                    <div class="loading-text">Loading published reports...</div>
+                    <div class="loading-text">公開済みレポートを読み込んでいます...</div>
                 </div>
             </div>
 
@@ -231,9 +231,9 @@
 
                 function getCategoryLabel(cat) {
                     switch(cat) {
-                        case 'management-system': return 'マネジメントシステム';
-                        case 'cyber-security': return 'サイバーセキュリティ';
-                        case 'product-certification': return '製品認証';
+                        case 'management-system': return 'マネジメントシステム認証';
+                        case 'cyber-security': return 'Cybersecurity';
+                        case 'product-certification': return 'Product Cert.';
                         default: return 'Other';
                     }
                 }
@@ -266,7 +266,7 @@
                         renderPublishedManageSection();
                     } catch(e) {
                         console.error(e);
-                        document.getElementById('draft-feed-container').innerHTML = '<p style="color:#e74c3c;">Failed to load data. Check console.</p>';
+                        document.getElementById('draft-feed-container').innerHTML = '<p style="color:#e74c3c;">データの読み込みに失敗しました。コンソールを確認してください。</p>';
                     }
                 }
 
@@ -275,7 +275,7 @@
                     badge.textContent = `${allDrafts.length} item(s)`;
                     const container = document.getElementById('draft-feed-container');
                     if (allDrafts.length === 0) {
-                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">No draft reports.</p>';
+                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">下書きレポートはありません。</p>';
                         return;
                     }
                     let html = '';
@@ -317,7 +317,7 @@
                     badge.textContent = `${allPublished.length} item(s)`;
                     const container = document.getElementById('published-manage-container');
                     if (allPublished.length === 0) {
-                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">No published reports.</p>';
+                        container.innerHTML = '<p style="color:#6c7a89; padding:20px 0;">公開済みレポートはありません。</p>';
                         return;
                     }
                     let html = '';
@@ -444,11 +444,11 @@
                 </div>
                 <div class="footer-details">
                     <span>SGCA Partners</span> <span class="divider">|</span>
-                    <span>Business Registration: 456-37-01417</span> <span class="divider">|</span>
-                    <span>Managing Partner: Sang-woo Sim</span>
+                    <span>事業者登録番号：456-37-01417</span> <span class="divider">|</span>
+                    <span>代表パートナー：Sang-woo Sim</span>
                 </div>
                 <div class="footer-copyright">
-                    <p>Copyright &copy; SGCA Partners すべて Rights Reserved.</p>
+                    <p>Copyright &copy; SGCA Partners All Rights Reserved.</p>
                 </div>
             </div>
         </div>
@@ -468,15 +468,15 @@
                 <div style="font-size:0.85rem; color:#6c7a89; margin-bottom:8px;" id="draftPreviewDate"></div>
                 <h2 id="draftPreviewTitle" style="font-size:1.2rem; font-weight:700; color:var(--color-deep-navy); margin:0 0 16px; line-height:1.5;"></h2>
                 <div style="background:#f8f9fa; border-left:3px solid #534ab7; border-radius:0 6px 6px 0; padding:12px 14px; margin-bottom:20px;">
-                    <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">Summary</div>
+                    <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;">要約</div>
                     <p id="draftPreviewDesc" style="font-size:0.9rem; color:#374151; line-height:1.6; margin:0;"></p>
                 </div>
-                <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em;">Full Content</div>
+                <div style="font-size:0.75rem; color:#6c7a89; font-weight:600; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.05em;">詳細内容</div>
                 <div id="draftPreviewBody" style="font-size:0.9rem; color:#374151; line-height:1.75; border:1px solid #e5e7eb; border-radius:8px; padding:16px;"></div>
             </div>
             <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 24px; border-top:1px solid #e5e7eb; background:#f9fafb; border-radius:0 0 12px 12px; position:sticky; bottom:0;">
                 <div style="display:flex; gap:10px;">
-                    <a id="draftPreviewLink" href="#" target="_blank" style="display:none; padding:8px 16px; border-radius:6px; border:1.5px solid #6c7a89; color:#6c7a89; font-size:0.85rem; font-weight:600; text-decoration:none;">View Source ↗</a>
+                    <a id="draftPreviewLink" href="#" target="_blank" style="display:none; padding:8px 16px; border-radius:6px; border:1.5px solid #6c7a89; color:#6c7a89; font-size:0.85rem; font-weight:600; text-decoration:none;">原文リンク ↗</a>
                     <button id="draftPreviewEditBtn" style="padding:8px 16px; border-radius:6px; border:1.5px solid var(--color-deep-navy); background:transparent; color:var(--color-deep-navy); font-size:0.85rem; font-weight:600; cursor:pointer;">
                         ✏️ Edit in Admin
                     </button>
@@ -499,7 +499,7 @@
             <div class="insight-modal-body" id="modalBody">
             </div>
             <div class="insight-modal-footer">
-                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" onclick="window.open(this.href, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;">View Original Source</a>
+                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" onclick="window.open(this.href, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;">原文を確認</a>
             </div>
         </div>
     </div>
@@ -535,7 +535,7 @@
 
         window.setCategory = function(cat, btnElement) {
             currentCategory = cat;
-            document.querySelectorすべて('.filter-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
             if(btnElement) btnElement.classList.add('active');
             renderInsightCards(6);
         };
@@ -546,7 +546,7 @@
             if (!db) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 60px 0;">
-                        <div class="error-text" style="color: #e74c3c; margin-bottom: 20px; padding: 0;">Please enter Firebase configuration in js/firebase-init.js.</div>
+                        <div class="error-text" style="color: #e74c3c; margin-bottom: 20px; padding: 0;">js/firebase-init.jsにFirebase設定を入力してください。</div>
                     </div>
                 `;
                 return;
@@ -555,12 +555,12 @@
             const filteredインサイト = allインサイト.filter(item => {
                 const matchCategory = currentCategory === 'all' || item.category === currentCategory;
                 const searchStr = searchKeyword.trim().toLowerCase();
-                const titleTo検索 = item.titleEn || item.title || '';
-                const descTo検索 = item.descEn || item.desc || '';
-                const match検索 = searchStr === '' || 
-                                    titleTo検索.toLowerCase().includes(searchStr) || 
-                                    descTo検索.toLowerCase().includes(searchStr);
-                return matchCategory && match検索;
+                const titleToSearch = item.titleEn || item.title || '';
+                const descToSearch = item.descEn || item.desc || '';
+                const matchSearch = searchStr === '' || 
+                                    titleToSearch.toLowerCase().includes(searchStr) || 
+                                    descToSearch.toLowerCase().includes(searchStr);
+                return matchCategory && matchSearch;
             });
 
             if (filteredインサイト.length === 0) {
@@ -593,19 +593,19 @@
                     case 'management-system':
                         categoryBadge = `<div class="category-badge badge-ms">
                             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                            マネジメントシステム
+                            マネジメントシステム認証
                         </div>`;
                         break;
                     case 'cyber-security':
                         categoryBadge = `<div class="category-badge badge-cs">
                             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                            サイバーセキュリティ
+                            Cybersecurity
                         </div>`;
                         break;
                     case 'product-certification':
                         categoryBadge = `<div class="category-badge badge-pc">
                             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
-                            製品認証
+                            Product Cert.
                         </div>`;
                         break;
                     default:
@@ -630,7 +630,7 @@
                 html += `
                     <div style="text-align: center; margin-top: 50px;">
                         <button onclick="renderInsightCards(${effectiveCount + 6})" style="background-color: transparent; color: var(--color-deep-navy); border: 2px solid var(--color-deep-navy); padding: 12px 40px; border-radius: 4px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-deep-navy)'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-deep-navy)';">
-                            もっと見る ▾
+                            View More ▾
                         </button>
                     </div>
                 `;
@@ -658,7 +658,7 @@
             }
 
             const container = document.getElementById('rss-feed-container');
-            container.innerHTML = '<div class="loading-text">最新のレポートを読み込んでいます...</div>';
+            container.innerHTML = '<div class="loading-text">Loading latest reports...</div>';
 
             db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
                 allインサイト = [];
@@ -667,7 +667,7 @@
                     if (d.status !== 'draft') allインサイト.push(d);
                 });
 
-                const currentCount = document.querySelectorすべて('.rss-card').length || 6;
+                const currentCount = document.querySelectorAll('.rss-card').length || 6;
                 renderInsightCards(currentCount);
             }, (error) => {
                 console.error("Data load failure: ", error);
