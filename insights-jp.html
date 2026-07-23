@@ -220,7 +220,7 @@
                 let allPublished = [];
 
                 function checkAdminPassword() {
-                    const pwd = prompt("Admin privileges required.\nPlease enter password.");
+                    const pwd = prompt("管理者権限が必要です。\nパスワードを入力してください。");
                     if (pwd === "banana147!") {
                         isAdminMode = true;
                         loadAdminSections();
@@ -232,9 +232,9 @@
                 function getCategoryLabel(cat) {
                     switch(cat) {
                         case 'management-system': return 'マネジメントシステム認証';
-                        case 'cyber-security': return 'Cybersecurity';
-                        case 'product-certification': return 'Product Cert.';
-                        default: return 'Other';
+                        case 'cyber-security': return 'サイバーセキュリティ';
+                        case 'product-certification': return '製品認証';
+                        default: return '未分類';
                     }
                 }
 
@@ -248,7 +248,7 @@
                 }
 
                 async function loadAdminSections() {
-                    if (!db) { alert("Firebase is not connected."); return; }
+                    if (!db) { alert("Firebaseが接続されていません。"); return; }
 
                     document.getElementById('draft-section').style.display = 'block';
                     document.getElementById('published-manage-section').style.display = 'block';
@@ -348,10 +348,10 @@
                 }
 
                 async function publishDraft(id) {
-                    if (!confirm("Publish this report to the site?")) return;
+                    if (!confirm("このレポートをサイトに公開しますか？")) return;
                     try {
                         await db.collection("insights").doc(id).update({ status: 'published' });
-                        alert("Published! The report is now visible on the インサイト page.");
+                        alert("公開完了！レポートがインサイトページに表示されます。");
                         await loadAdminSections();
                         allInsights = [];
                         const snap = await db.collection("insights").orderBy("date", "desc").get();
@@ -362,16 +362,16 @@
                         renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
-                        alert("Error while publishing.");
+                        alert("公開中にエラーが発生しました。");
                     }
                 }
 
                 async function deleteReport(id, type) {
-                    const label = type === 'draft' ? 'draft report' : 'published report';
-                    if (!confirm(`Permanently delete this ${label}?\nThis action cannot be undone.`)) return;
+                    const label = type === 'draft' ? '下書きレポート' : '公開レポート';
+                    if (!confirm(`この${label}を完全に削除しますか？\nこの操作は取り消せません。`)) return;
                     try {
                         await db.collection("insights").doc(id).delete();
-                        alert("Deleted successfully.");
+                        alert("削除が完了しました。");
                         await loadAdminSections();
                         allInsights = [];
                         const snap = await db.collection("insights").orderBy("date", "desc").get();
@@ -382,7 +382,7 @@
                         renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
-                        alert("Error while deleting.");
+                        alert("削除中にエラーが発生しました。");
                     }
                 }
 
@@ -599,17 +599,17 @@
                     case 'cyber-security':
                         categoryBadge = `<div class="category-badge badge-cs">
                             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                            Cybersecurity
+                            サイバーセキュリティ
                         </div>`;
                         break;
                     case 'product-certification':
                         categoryBadge = `<div class="category-badge badge-pc">
                             <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
-                            Product Cert.
+                            製品認証
                         </div>`;
                         break;
                     default:
-                        categoryBadge = `<div class="category-badge" style="background:#eee; color:#666;">Other</div>`;
+                        categoryBadge = `<div class="category-badge" style="background:#eee; color:#666;">未分類</div>`;
                 }
 
                 html += `
@@ -630,7 +630,7 @@
                 html += `
                     <div style="text-align: center; margin-top: 50px;">
                         <button onclick="renderInsightCards(${effectiveCount + 6})" style="background-color: transparent; color: var(--color-deep-navy); border: 2px solid var(--color-deep-navy); padding: 12px 40px; border-radius: 4px; font-weight: 600; font-size: 1.05rem; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.backgroundColor='var(--color-deep-navy)'; this.style.color='white';" onmouseout="this.style.backgroundColor='transparent'; this.style.color='var(--color-deep-navy)';">
-                            View More ▾
+                            もっと見る ▾
                         </button>
                     </div>
                 `;
