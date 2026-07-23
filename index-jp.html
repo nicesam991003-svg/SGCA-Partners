@@ -250,18 +250,18 @@
 
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
-                window.allインサイト = [];
+            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
+                window.allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     if (data.status !== 'draft') {
-                        window.allインサイト.push({ id: doc.id, ...data });
+                        window.allInsights.push({ id: doc.id, ...data });
                     }
                 });
                 
-                window.allインサイト = window.allインサイト.slice(0, 3);
+                window.allInsights = window.allInsights.slice(0, 3);
 
-                if (window.allインサイト.length === 0) {
+                if (window.allInsights.length === 0) {
                     if (querySnapshot.empty) {
                         container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">現在、登録されているレポートはありません。（サーバーから返されたレポート数：0）</p>';
                     } else {
@@ -272,7 +272,7 @@
 
                 let html = '<div class="main-rss-grid">';
                 
-                window.allインサイト.forEach(item => {
+                window.allInsights.forEach(item => {
                     let dateStr = item.date;
                     if(dateStr && dateStr.includes('-')) {
                         const parts = dateStr.split('-');
@@ -320,14 +320,14 @@
                 
                 html += '</div>';
                 container.innerHTML = html;
-            }, (error) => {
+            }).catch((error) => {
                 console.error("Data load failure: ", error);
                 container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">レポートの読み込み中にエラーが発生しました。コンソールを確認してください。</p>`;
             });
         });
 
         window.openInsightModal = function(id) {
-            const item = window.allインサイト.find(i => i.id === id);
+            const item = window.allInsights.find(i => i.id === id);
             if (!item) return;
 
             let dateStr = item.date;

@@ -624,7 +624,7 @@
                 insightsUnsubscribe();
             }
             try {
-                insightsUnsubscribe = db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+                db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
                     allInsights = [];
                     allDrafts = [];
                     allPublished = [];
@@ -647,7 +647,7 @@
                         renderDraftSection();
                         renderPublishedManageSection();
                     }
-                }, (error) => {
+                }).catch((error) => {
                     console.error("데이터 로드 실패: ", error);
                     container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
                 });

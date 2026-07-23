@@ -250,18 +250,18 @@
 
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
-                window.all行业洞察 = [];
+            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
+                window.allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     if (data.status !== 'draft') {
-                        window.all行业洞察.push({ id: doc.id, ...data });
+                        window.allInsights.push({ id: doc.id, ...data });
                     }
                 });
                 
-                window.all行业洞察 = window.all行业洞察.slice(0, 3);
+                window.allInsights = window.allInsights.slice(0, 3);
 
-                if (window.all行业洞察.length === 0) {
+                if (window.allInsights.length === 0) {
                     if (querySnapshot.empty) {
                         container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">当前没有可用的报告。（服务器返回了0篇报告）</p>';
                     } else {
@@ -272,7 +272,7 @@
 
                 let html = '<div class="main-rss-grid">';
                 
-                window.all行业洞察.forEach(item => {
+                window.allInsights.forEach(item => {
                     let dateStr = item.date;
                     if(dateStr && dateStr.includes('-')) {
                         const parts = dateStr.split('-');
@@ -320,14 +320,14 @@
                 
                 html += '</div>';
                 container.innerHTML = html;
-            }, (error) => {
+            }).catch((error) => {
                 console.error("Data load failure: ", error);
                 container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">加载报告时出错。请检查控制台。</p>`;
             });
         });
 
         window.openInsightModal = function(id) {
-            const item = window.all行业洞察.find(i => i.id === id);
+            const item = window.allInsights.find(i => i.id === id);
             if (!item) return;
 
             let dateStr = item.date;

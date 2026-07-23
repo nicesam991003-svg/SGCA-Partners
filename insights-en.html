@@ -660,7 +660,7 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">Loading latest reports...</div>';
 
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
                 allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const d = { id: doc.id, ...doc.data() };
@@ -669,7 +669,7 @@
 
                 const currentCount = document.querySelectorAll('.rss-card').length || 6;
                 renderInsightCards(currentCount);
-            }, (error) => {
+            }).catch((error) => {
                 console.error("Data load failure: ", error);
                 container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Error loading reports. Please check console.</p>`;
             });

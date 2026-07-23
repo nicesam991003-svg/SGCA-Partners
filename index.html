@@ -253,7 +253,7 @@
 
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">최신 리포트를 불러오는 중입니다...</p>';
 
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
+            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
@@ -322,7 +322,7 @@
                 
                 html += '</div>';
                 container.innerHTML = html;
-            }, (error) => {
+            }).catch((error) => {
                 console.error("데이터 로드 실패: ", error);
                 container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
             });
