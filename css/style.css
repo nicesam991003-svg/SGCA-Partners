@@ -1129,15 +1129,17 @@ nav {
     .language-selector {
         display: flex;
         margin-left: auto;
-        margin-right: 0.8rem;
+        margin-right: 0.5rem;
         order: 2;
+        font-size: 0; /* Hides the vertical line separators | on mobile to save space */
+        gap: 1px;
     }
     .lang-btn {
-        padding: 4px 8px;
+        padding: 4px 6px;
         font-size: 0.7rem;
     }
     .logo img {
-        height: 50px !important;
+        height: 40px !important; /* Reduced logo size on mobile to make room for menu buttons */
     }
     
     body {
