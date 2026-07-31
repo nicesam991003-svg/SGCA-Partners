@@ -26,7 +26,7 @@ try {
     }
 
     db = firebase.firestore();
-    db.settings({ experimentalAutoDetectLongPolling: true, merge: true });
+    db.settings({ experimentalForceLongPolling: true, experimentalAutoDetectLongPolling: false, merge: true });
     console.log("Firebase가 성공적으로 초기화되었습니다.");
 } catch (error) {
     console.error("Firebase 초기화 중 오류 발생: ", error);
