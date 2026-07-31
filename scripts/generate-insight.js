@@ -142,6 +142,11 @@ const CATEGORY_CONFIGS = {
 <h4>■ 일정 및 영향</h4><p>시행 일정·전환 기간·영향 범위</p>
 <h4>■ 시사점 및 대응 권고</h4><p>국내 인증기업 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [출처명] ([날짜])</p>`,
+    layoutEn: `<h4>■ Overview</h4><p>News background and publishing entity</p>
+<h4>■ Key Contents</h4><ul><li>Key changes or announcement items</li></ul>
+<h4>■ Timeline & Impact</h4><p>Implementation timeline, transition period, and scope of impact</p>
+<h4>■ Implications & Recommendations</h4><p>Response strategies for domestic certified organizations</p>
+<p style='font-size:0.85em;color:#6c7a89;'>※ Source: [Source Name] ([Date])</p>`,
     userPromptTemplate: (today) => `오늘(${today}) 기준 최근 1주일 이내 위 지정된 7개 사이트(ISO, IEC, Global ACI, KAB, ANAB, IAS, UKAS)에 직접 게시된 경영시스템인증 분야의 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 만약 지정된 사이트들에서 최근 1주일 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 1주일 신규 뉴스가 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
@@ -183,6 +188,11 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·기업·시행 일정·유예 기간</p>
 <h4>■ 국내 기업 시사점 및 대응 권고</h4><p>한국 수출 기업·제조사 관점의 대응 방향</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
+    layoutEn: `<h4>■ Overview</h4><p>Publishing organization, background, and scope of regulated targets</p>
+<h4>■ Key Contents</h4><ul><li>Key requirements and changes described item by item</li></ul>
+<h4>■ Applicable Scope and Timeline</h4><p>Relevant product lines, companies, implementation timeline, and grace periods</p>
+<h4>■ Implications and Recommendations for Korean Companies</h4><p>Response directions from the perspective of Korean exporting companies and manufacturers</p>
+<p style='font-size:0.85em;color:#6c7a89;'>※ Source: [Organization Name] ([Date])</p>`,
     userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 사이버보안 규제·가이드라인·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. 특히 **European Commission CRA (digital-strategy.ec.europa.eu/en/policies/cyber-resilience-act)**와 **IEC Cybersecurity (www.iec.ch/cyber-security)**에 게시된 최신 뉴스를 최우선으로 검색하고, 해당 사이트에 신규 뉴스가 있다면 우선적으로 리포트를 작성하세요. 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 사이버보안 신규 소식이 없습니다."}를 반환하세요.`,
     sleepTime: 20000
   },
@@ -221,7 +231,12 @@ const CATEGORY_CONFIGS = {
 <h4>■ 적용 대상 및 일정</h4><p>해당 제품군·인증 범위·시행일·전환 기간·유예 조항</p>
 <h4>■ 국내 수출기업 시사점 및 대응 권고</h4><p>한국 제조·수출 기업의 인증 전략 및 준비 사항</p>
 <p style='font-size:0.85em;color:#6c7a89;'>※ 출처: [기관명] ([날짜])</p>`,
-    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 제품인증 관련 규정·표준·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. EU Machinery Regulation, OSHA NRTL 표준 변경, IECEx 최신 소식을 우선 확인하며, 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이트 내 최근 2주 제품인증 신규 뉴스가 없습니다."}를 반환하세요.`,
+    layoutEn: `<h4>■ Overview</h4><p>Publishing organization, regulation, background of the standard, and announcement details</p>
+<h4>■ Key Contents</h4><ul><li>Key requirements, standard changes, and certification process changes described item by item</li></ul>
+<h4>■ Applicable Scope and Timeline</h4><p>Relevant product lines, certification scope, effective date, transition period, and grace period clauses</p>
+<h4>■ Implications and Recommendations for Exporting Companies</h4><p>Certification strategies and preparation items for Korean manufacturers and exporters</p>
+<p style='font-size:0.85em;color:#6c7a89;'>※ Source: [Organization Name] ([Date])</p>`,
+    userPromptTemplate: (today) => `오늘(${today}) 기준 최근 2주 이내 위 지정된 기관 사이트에 직접 게시된 제품인증 관련 규정·표준·정책 중 가장 중요한 뉴스 1건만 검색하여 리포트로 작성하세요. EU Machinery Regulation, OSHA NRTL 표준 변경, IECEx 최신 소식을 우선 확인하며, 지정된 출처가 아닌 뉴스나 블로그 글은 절대 제외하세요. 반드시 실제 확인된 기관 URL을 link에 포함하세요. 만약 지정된 사이트들에서 최근 2주 이내의 새로운 뉴스가 전혀 없다면, 무리해서 생성하지 말고 반드시 {"skip": true, "reason": "지정된 기관 사이체 내 최근 2주 제품인증 신규 뉴스가 없습니다."}를 반환하세요.`,
     sleepTime: 0
   }
 };
@@ -245,24 +260,30 @@ ${config.sources}
 
 반환 형식:
 {
-  "title": "${config.titleInstructions}",
-  "titleEn": "English translation of the title",
+  "titleEn": "English summary title of the report based directly on the original source, including specific standards and names",
+  "title": "Natural Korean translation of titleEn",
   "category": "${categoryKey}",
   "date": "${today}",
   "link": "실제 존재하는 원문 URL",
-  "desc": "${config.descInstructions}",
-  "descEn": "English translation of the desc",
-  "fullContent": "A4 1장 분량 HTML (아래 구조 참고)",
-  "fullContentEn": "English translation of the fullContent HTML"
+  "descEn": "A 2~3 sentence English summary of the report focusing on key impacts and requirements",
+  "desc": "Natural Korean translation of descEn",
+  "fullContentEn": "Full content drafted in English HTML using the English layout structure below",
+  "fullContent": "Natural Korean translation of fullContentEn with identical HTML structure"
 }
 
 중요 지침 (CRITICAL):
 1. 반환 형식은 반드시 파싱 가능한 유효한 JSON 객체 하나여야만 합니다.
 2. JSON 형식을 제외한 어떠한 인사말, 설명, 부가 텍스트, Markdown 블록(\`\`\`json 등)도 절대로 포함하지 마세요. 오직 { 로 시작해서 } 로 끝나야 합니다.
-3. fullContent 내의 HTML 태그나 속성(예: style 등)에는 절대 큰따옴표(")를 사용하지 말고, 항상 작은따옴표(')를 사용하세요. (예: <p style='font-size:0.85em;color:#6c7a89;'>)
-4. 만약 title, desc, fullContent 등의 문자열 내용 안에 어쩔 수 없이 큰따옴표(")를 사용해야 하는 경우, 반드시 백슬래시로 이스케이프하여 \\" 형태로 출력하세요.
+3. fullContent 및 fullContentEn 내의 HTML 태그나 속성(예: style 등)에는 절대 큰따옴표(")를 사용하지 말고, 항상 작은따옴표(')를 사용하세요. (예: <p style='font-size:0.85em;color:#6c7a89;'>)
+4. 만약 모든 텍스트 필드 문자열 내용 안에 어쩔 수 없이 큰따옴표(")를 사용해야 하는 경우, 반드시 백슬래시로 이스케이프하여 \\" 형태로 출력하세요.
+5. **작성 과정 (CRITICAL WORKFLOW)**:
+   - 검색된 영어 원문 뉴스를 읽고, 먼저 영문 필드(\`titleEn\`, \`descEn\`, \`fullContentEn\`)를 직접 요약 작성하세요.
+   - 그 다음, 작성된 영문 필드들을 한국어로 정밀하게 번역하여 한국어 필드(\`title\`, \`desc\`, \`fullContent\`)를 채우세요. 이 과정을 거치면 영문 카드 내용과 한글 내용이 완벽히 정렬됩니다.
 
-fullContent HTML 구조:
+영어 HTML 본문 구조 (fullContentEn용):
+${config.layoutEn}
+
+한국어 HTML 본문 구조 (fullContent용):
 ${config.layout}`;
 
   const userPrompt = config.userPromptTemplate(today) + existingContext + "\n\n[CRITICAL WARNING] You MUST return ONLY a valid JSON object starting with { and ending with }. Do not add any conversational text or explanations.";
@@ -276,8 +297,8 @@ ${config.layout}`;
         return report;
       }
 
-      // 필수 필드 검증 (영문 필드는 누락되거나 빈 문자열이어도 통과하도록 선택 필드로 변경)
-      const required = ['title', 'category', 'date', 'desc', 'fullContent'];
+      // 필수 필드 검증 (모두 필수 필드로 지정)
+      const required = ['title', 'titleEn', 'category', 'date', 'desc', 'descEn', 'fullContent', 'fullContentEn'];
       required.forEach(f => {
         if (!report[f] || String(report[f]).trim() === '') {
           throw new Error(`필수 필드 누락 또는 빈 값: ${f}`);
