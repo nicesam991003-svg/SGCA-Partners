@@ -1,10 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   const lang = document.documentElement.lang.split('-')[0];
   const words = {
-    ko: ['메뉴 열기', '메뉴 닫기', '이전 슬라이드', '다음 슬라이드', '슬라이드 일시 정지', '슬라이드 재생', '원문 발행일', '리포트 등록일', '출처 확인일', '확인되지 않음', '공개 목록 동기화'],
-    en: ['Open menu', 'Close menu', 'Previous slide', 'Next slide', 'Pause slideshow', 'Play slideshow', 'Source publication', 'Report registration', 'Source reviewed', 'Not verified', 'Published list synchronized'],
-    ja: ['メニューを開く', 'メニューを閉じる', '前のスライド', '次のスライド', 'スライドを一時停止', 'スライドを再生', '原文公開日', 'レポート登録日', '出典確認日', '未確認', '公開一覧の同期'],
-    zh: ['打开菜单', '关闭菜单', '上一张幻灯片', '下一张幻灯片', '暂停幻灯片', '播放幻灯片', '原文发布日期', '报告登记日期', '来源核实日期', '未核实', '公开列表同步时间']
+    ko: ['메뉴 열기', '메뉴 닫기', '이전 슬라이드', '다음 슬라이드', '슬라이드 일시 정지', '슬라이드 재생', '원문 발행·갱신일', '리포트 등록일', '출처 확인일', '확인되지 않음', '공개 목록 동기화'],
+    en: ['Open menu', 'Close menu', 'Previous slide', 'Next slide', 'Pause slideshow', 'Play slideshow', 'Source published/updated', 'Report registration', 'Source reviewed', 'Not verified', 'Published list synchronized'],
+    ja: ['メニューを開く', 'メニューを閉じる', '前のスライド', '次のスライド', 'スライドを一時停止', 'スライドを再生', '原文公開・更新日', 'レポート登録日', '出典確認日', '未確認', '公開一覧の同期'],
+    zh: ['打开菜单', '关闭菜单', '上一张幻灯片', '下一张幻灯片', '暂停幻灯片', '播放幻灯片', '原文发布/更新日期', '报告登记日期', '来源核实日期', '未核实', '公开列表同步时间']
   }[lang] || [];
   const nav = document.querySelector('nav');
   const bar = document.querySelector('.navbar .container');

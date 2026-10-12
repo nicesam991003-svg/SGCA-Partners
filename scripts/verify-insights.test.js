@@ -165,3 +165,18 @@ test('saving a draft stays draft without explicit approval; changed content inva
   assert.equal(savePayload({ ...values, title: '수정 제목' }, published, values, false).status, 'draft');
   assert.equal(savePayload(values, null, null, false).status, 'draft');
 });
+
+test('reviewed edits preserve source identity and dates only for the same original URL', () => {
+  const values = reportValues({title:'한글 제목',link:'https://nist.gov/news'});
+  const prior = {...values,status:'published',sourceVerification:{status:'verified',url:values.link,title:'Original title',publishedDate:'2026-10-09',contentSha256:'old-hash'}};
+  const saved = savePayload({...values,titleEn:'English title'},prior,values,true);
+  assert.equal(saved.sourceVerification.title,'Original title');
+  assert.equal(saved.sourceVerification.publishedDate,'2026-10-09');
+  assert.equal(saved.sourceVerification.contentSha256,undefined);
+  const changed = savePayload({...values,link:'https://nist.gov/other'},prior,values,true);
+  assert.equal(changed.sourceVerification.title,undefined);
+  assert.equal(changed.sourceVerification.publishedDate,undefined);
+  const supplied = savePayload(values,prior,values,true,{title:'Reviewed title',publishedDate:'2026-10-10'});
+  assert.equal(supplied.sourceVerification.title,'Reviewed title');
+  assert.equal(supplied.sourceVerification.publishedDate,'2026-10-10');
+});

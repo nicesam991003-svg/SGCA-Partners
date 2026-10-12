@@ -4,10 +4,17 @@
     function reportValues(report) {
         return Object.fromEntries(fields.map(key => [key, typeof report[key] === 'string' && report[key] !== '#' ? report[key] : '']));
     }
-    function savePayload(values, previous, baseline, reviewed) {
+    function savePayload(values, previous, baseline, reviewed, provenance = {}) {
         const unchanged = previous && baseline && fields.every(key => values[key] === baseline[key]);
         let sourceVerification = unchanged ? previous.sourceVerification : null;
-        if (reviewed && values.link) sourceVerification = { status: 'manual_reviewed', url: values.link, checkedAt: new Date().toISOString(), translationAccurate: true, method: 'editor-source-and-translation-review' };
+        if (reviewed && values.link) {
+            const sameSource = previous?.link === values.link && previous.sourceVerification?.url === values.link;
+            const title = provenance.title ?? (sameSource ? previous.sourceVerification.title : '');
+            const publishedDate = provenance.publishedDate ?? (sameSource ? previous.sourceVerification.publishedDate : '');
+            sourceVerification = { status: 'manual_reviewed', url: values.link, checkedAt: new Date().toISOString(), translationAccurate: true, method: 'editor-source-and-translation-review' };
+            if (title) sourceVerification.title = title;
+            if (publishedDate) sourceVerification.publishedDate = publishedDate;
+        }
         sourceVerification ||= { status: 'review_required', reason: 'Source or content requires review.' };
         const verified = values.link && sourceVerification.url === values.link && ['verified', 'manual_reviewed'].includes(sourceVerification.status);
         // Editing a draft never publishes it accidentally. Use the explicit review checkbox to publish.
@@ -57,6 +64,8 @@
         function fillReport(report) {
             const values = reportValues(report);
             for (const [key,id] of Object.entries(ids)) document.getElementById(id).value = values[key];
+            document.getElementById('source-title').value = report.sourceVerification?.title || '';
+            document.getElementById('source-date').value = report.sourceVerification?.publishedDate || '';
             quill.clipboard.dangerouslyPasteHTML(values.fullContent);
             quillEn.clipboard.dangerouslyPasteHTML(values.fullContentEn);
             document.getElementById('source-reviewed').checked = false;
@@ -118,13 +127,22 @@
             } catch (error) { root.showInsightLoadError(list); }
         }
         document.getElementById('start-new-report').addEventListener('click', startNew);
+        document.getElementById('post-link').addEventListener('input', () => {
+            if (editing && document.getElementById('post-link').value.trim() !== editing.link) {
+                document.getElementById('source-title').value = '';
+                document.getElementById('source-date').value = '';
+            }
+        });
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (submit.disabled) return;
             if (!root.db) { alert('저장 연결을 사용할 수 없습니다. 새로고침해 주세요.'); return; }
             const values = readValues();
             if (values.link && !root.getInsightSourceLink({ link: values.link, sourceVerification: { status: 'manual_reviewed', url: values.link } })) { alert('기관 원문 페이지의 HTTPS 주소를 입력하세요. 검색 중계 주소는 사용할 수 없습니다.'); return; }
-            const payload = savePayload(values, editing, baseline, document.getElementById('source-reviewed').checked);
+            const payload = savePayload(values, editing, baseline, document.getElementById('source-reviewed').checked, {
+                title: document.getElementById('source-title').value.trim(),
+                publishedDate: document.getElementById('source-date').value
+            });
             busy(true);
             try {
                 if (editing) {
