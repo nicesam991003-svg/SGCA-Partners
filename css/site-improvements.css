@@ -7,7 +7,7 @@
 .service-process ol {display:grid;grid-template-columns:repeat(4,1fr);gap:18px;list-style-position:inside;margin:18px 0 24px}
 .service-process li {padding:20px;background:white;border:1px solid #dce2e8;border-radius:8px;line-height:1.7}
 .service-process p {line-height:1.8;margin-bottom:10px}
-.contact-value a {color:inherit;text-decoration:underline;text-underline-offset:4px}
+.contact-value a {color:inherit;text-decoration:none}
 .report-language-notice,.snapshot-freshness {font-size:.9rem;line-height:1.6;margin:12px 0;color:#64748b}
 .main-rss-feed-container .snapshot-freshness,#latest-insights .report-language-notice {color:#d4dce8}
 .insight-modal-close {background:transparent;border:0;font:inherit;cursor:pointer;padding:8px;min-width:44px;min-height:44px}
