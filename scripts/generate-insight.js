@@ -14,9 +14,15 @@ const GEMINI_API_KEY      = process.env.GEMINI_API_KEY;
 const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
-if (require.main === module && (!GEMINI_API_KEY || !FIREBASE_API_KEY || !FIREBASE_PROJECT_ID)) {
-  console.error('❌ 필수 환경변수 누락: GEMINI_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
-  process.exit(1);
+function validateApiConfiguration(env, publicFirebaseKey) {
+  const gemini = env.GEMINI_API_KEY?.trim();
+  const firebase = env.FIREBASE_API_KEY?.trim();
+  if (!gemini || !firebase || !env.FIREBASE_PROJECT_ID?.trim()) {
+    throw new Error('필수 환경변수 누락: GEMINI_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
+  }
+  if (gemini === firebase || gemini === publicFirebaseKey) {
+    throw new Error('공개 Firebase 웹 키를 Gemini에 사용할 수 없습니다. Gemini 전용 비공개 API 키를 설정하세요.');
+  }
 }
 
 // ─────────────────────────────────────────
@@ -380,6 +386,11 @@ function sleep(ms) {
 // 9. 메인 실행
 // ─────────────────────────────────────────
 async function main() {
+  // The browser key is intentionally public. Never use it for the billable Gemini API.
+  const browserConfig = require('node:fs').readFileSync(require('node:path').join(__dirname, '../js/firebase-init.js'), 'utf8');
+  const browserKey = browserConfig.match(/apiKey\s*:\s*['"]([^'"]+)['"]/)?.[1];
+  if (!browserKey) throw new Error('Firebase 웹 설정의 키를 확인할 수 없습니다. 키 분리 검사를 진행하지 못했습니다.');
+  validateApiConfiguration(process.env, browserKey);
   console.log('╔══════════════════════════════════════════╗');
   console.log('║   SGCA Partners 인사이트 자동 생성 시작  ║');
   console.log('╚══════════════════════════════════════════╝');
@@ -442,5 +453,5 @@ async function main() {
   }
   console.log('\n🎉 완료! 관리자 모드 > 등록 전 리포트에서 확인하세요.');
 }
-module.exports = { generateCategoryReport, saveToFirestore, callGemini };
+module.exports = { generateCategoryReport, saveToFirestore, callGemini, validateApiConfiguration };
 if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1; });

@@ -2,9 +2,22 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot } = require('../js/insight-data');
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
-const { saveToFirestore } = require('./generate-insight');
+const { saveToFirestore, validateApiConfiguration } = require('./generate-insight');
 const { reportValues, savePayload } = require('../js/admin-editor');
 const page = '<html><head><title>NIST publishes OT guide</title><meta property="article:published_time" content="2026-10-09"></head><main>' + 'NIST publishes new guidance for securing operational technology systems. '.repeat(5) + '</main></html>';
+
+test('generator rejects a public Firebase key used as the Gemini secret without exposing key values', () => {
+  const env = { GEMINI_API_KEY: 'private-gemini-example', FIREBASE_API_KEY: 'firebase-example', FIREBASE_PROJECT_ID: 'project-example' };
+  assert.doesNotThrow(() => validateApiConfiguration(env, 'public-browser-example'));
+  for (const key of ['firebase-example', 'public-browser-example']) {
+    assert.throws(() => validateApiConfiguration({ ...env, GEMINI_API_KEY: ' ' + key + ' ' }, 'public-browser-example'), error => {
+      assert.match(error.message, /Gemini/);
+      assert.equal(error.message.includes(key), false);
+      return true;
+    });
+  }
+  assert.throws(() => validateApiConfiguration({ ...env, GEMINI_API_KEY: '' }, 'public-browser-example'), /환경변수/);
+});
 
 test('server document decoding retains missing-date reports, sorts dates and preserves draft status', () => {
   const snapshot = makeSnapshot([
