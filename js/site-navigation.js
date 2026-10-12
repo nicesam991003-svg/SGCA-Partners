@@ -73,7 +73,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     prev.addEventListener('click', () => { current = (current + slides.length - 1) % slides.length; render(); restart(); });
     next.addEventListener('click', () => { current = (current + 1) % slides.length; render(); restart(); });
-    pause.addEventListener('click', () => { paused = !paused; restart(); });
+    let pauseBeforePointer;
+    pause.addEventListener('pointerdown', () => { pauseBeforePointer = paused; });
+    pause.addEventListener('click', event => {
+      // Focus also pauses the carousel; a first mouse click must not undo that pause.
+      paused = event.detail > 0 && pauseBeforePointer !== undefined ? !pauseBeforePointer : !paused;
+      pauseBeforePointer = undefined;
+      restart();
+    });
     slidesContainer.closest('.hero-slider').addEventListener('focusin', () => { paused = true; restart(); });
     document.addEventListener('visibilitychange', restart); render(); restart();
   }
