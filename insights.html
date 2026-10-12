@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SGCA Partners - 기술 블로그 및 최신 규제 업데이트.">
     <title>인사이트 | SGCA Partners</title>
-    <link rel="icon" type="image/png" href="images/favicon.png">
-    <link rel="shortcut icon" href="images/favicon.png">
-    <link rel="apple-touch-icon" href="images/favicon.png">
+    <link rel="icon" type="image/png" href="images/favicon-48.png">
+    <link rel="shortcut icon" href="images/favicon-48.png">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
     
     <!-- Social Share (Open Graph) Meta Tags -->
     <meta property="og:title" content="인사이트 | SGCA Partners">
     <meta property="og:description" content="글로벌 핵심 산업의 최신 규제 동향과 전문 분석 리포트를 확인하세요.">
-    <meta property="og:image" content="images/og-image.png">
+    <meta property="og:image" content="https://sgca-partners.com/images/og-image.png">
     
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -29,6 +29,7 @@
     <link rel="alternate" hreflang="ja" href="https://sgca-partners.com/insights-jp.html">
     <link rel="alternate" hreflang="zh-Hans" href="https://sgca-partners.com/insights-cn.html">
     <link rel="alternate" hreflang="x-default" href="https://sgca-partners.com/insights.html">
+    <link rel="stylesheet" href="css/site-improvements.css?v=1.0">
 </head>
 <body>
     <header class="navbar">
@@ -413,14 +414,15 @@
         </div>
     </section>
 
+<section class="consultation-section" id="contact"><div class="container"><h2>상담 문의</h2><p>제품·조직과 목표 시장을 알려주시면 필요한 규제와 서비스 범위를 함께 검토합니다.</p><div class="consultation-actions"><a class="btn btn-primary" href="mailto:sim@sgca-partners.com">이메일 상담</a><a class="btn btn-outline" href="tel:+821092319088">전화 상담</a></div></div></section>
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-info">
                 <div class="footer-contact">
                     <span class="contact-label">대표전화</span>
-                    <span class="contact-value">010-9231-9088</span>
+                    <span class="contact-value"><a href="tel:+821092319088">010-9231-9088</a></span>
                     <span class="contact-label ms-3">이메일</span>
-                    <span class="contact-value">sim@sgca-partners.com</span>
+                    <span class="contact-value"><a href="mailto:sim@sgca-partners.com">sim@sgca-partners.com</a></span>
                 </div>
                 <div class="footer-details">
                     <span>SGCA Partners</span> <span class="divider">|</span>
@@ -474,27 +476,27 @@
     </div>
 
     <!-- Insight Modal -->
-    <div id="insightModal" class="insight-modal">
+    <div id="insightModal" class="insight-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
         <div class="insight-modal-content">
-            <span class="insight-modal-close" onclick="closeInsightModal()">&times;</span>
+            <button type="button" class="insight-modal-close" aria-label="리포트 닫기" onclick="closeInsightModal()">&times;</button>
             <div class="insight-modal-header">
-                <span id="modalDate" class="modal-date"></span>
+                <span id="modalDate" class="modal-date"></span><div id="modalProvenance" class="modal-provenance"></div>
                 <h2 id="modalTitle" class="modal-title"></h2>
             </div>
             <div class="insight-modal-body" id="modalBody">
             </div>
             <div class="insight-modal-footer">
-                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" onclick="window.open(this.href, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;">원문 링크 보기</a>
+                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" target="_blank" rel="noopener noreferrer">원문 링크 보기</a>
             </div>
         </div>
     </div>
 
-    <script src="js/main.js?v=1.1"></script>
+    <script src="js/site-navigation.js?v=1.0"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script defer src="js/firebase-init.js?v=1.5"></script>
-    <script defer src="js/insight-data.js?v=2.0"></script>
+    <script defer src="js/insight-data.js?v=2.1"></script>
     <script defer src="js/admin-auth.js?v=2.0"></script>
     <script>
         // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
@@ -600,14 +602,14 @@
                 }
 
                 html += `
-                    <div onclick="openInsightModal('${item.id}')" class="rss-card" style="cursor: pointer;">
+                    <a href="?report=${encodeURIComponent(item.id)}" data-report-id="${encodeURIComponent(item.id)}" class="rss-card" style="cursor: pointer;">
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
                             <h3 class="rss-title">${highlightText(item.title, searchKeyword)}</h3>
                             <p class="rss-desc" style="margin-top: 5px;">${highlightText(shortDesc, searchKeyword)}</p>
                         </div>
-                    </div>
+                    </a>
                 `;
             });
             
@@ -633,7 +635,7 @@
                 insightsUnsubscribe();
             }
             try {
-                return window.loadInsightSnapshot({ includeDrafts: isAdminMode }).then((querySnapshot) => {
+                return window.loadInsightSnapshot({ includeDrafts: isAdminMode, preferStatic: !isAdminMode }).then((querySnapshot) => {
                     allInsights = [];
                     allDrafts = [];
                     allPublished = [];

@@ -1,5 +1,6 @@
 node_modules/
 gha-creds-*.json
+_site/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log

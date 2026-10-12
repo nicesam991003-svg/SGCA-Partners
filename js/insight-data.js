@@ -23,10 +23,30 @@
         }).sort((a, b) => b.data().date.localeCompare(a.data().date) || a.id.localeCompare(b.id));
         return { empty: docs.length === 0, size: docs.length, docs, forEach: fn => docs.forEach(fn) };
     }
-    async function loadInsightSnapshot({ includeDrafts = false } = {}) {
+    function verifiedPublishedCopy(copy, now = Date.now()) {
+        if (!copy || copy.projectId !== firebaseConfig.projectId || !Array.isArray(copy.documents) ||
+            !Number.isFinite(Date.parse(copy.generatedAt)) || now - Date.parse(copy.generatedAt) > 86400000 || Date.parse(copy.generatedAt) > now + 300000) {
+            throw new Error('Published report copy is missing or out of date');
+        }
+        for (const doc of copy.documents) {
+            if (!doc.name?.startsWith(`projects/${firebaseConfig.projectId}/databases/(default)/documents/insights/`) || !doc.fields ||
+                doc.fields.status?.stringValue !== 'published') throw new Error('Invalid published report copy');
+            const item = decodeFields(doc.fields);
+            if (!getInsightSourceLink(item) || item.sourceVerification?.translationAccurate !== true) throw new Error('Unverified published report copy');
+        }
+        const snapshot = makeSnapshot(copy.documents);
+        snapshot.generatedAt = copy.generatedAt;
+        return snapshot;
+    }
+    function announceSnapshot(snapshot) {
+        root.latestPublicSnapshot = snapshot;
+        if (root.dispatchEvent && typeof CustomEvent !== 'undefined') root.dispatchEvent(new CustomEvent('insight-snapshot', {detail:{generatedAt:snapshot.generatedAt}}));
+        return snapshot;
+    }
+    async function loadInsightSnapshot({ includeDrafts = false, preferStatic = false } = {}) {
         // REST queries are authoritative server reads; SDK cache/WebChannel transport is bypassed.
         // No orderBy: Firestore excludes documents lacking the ordered field.
-        const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents:runQuery?key=${encodeURIComponent(firebaseConfig.apiKey)}`;
+        const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents:runQuery`;
         const query = { from: [{ collectionId: 'insights' }] };
         let authorization = {};
         if (includeDrafts) {
@@ -41,21 +61,34 @@
                 const response = await fetch(endpoint, {
                     method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', ...authorization },
                     body: JSON.stringify({ structuredQuery: query }),
-                    signal: AbortSignal.timeout(15000)
+                    signal: AbortSignal.timeout(preferStatic ? 4000 : 15000)
                 });
                 if (!response.ok) throw new Error(`Insight server returned HTTP ${response.status}`);
                 const rows = await response.json();
                 if (!Array.isArray(rows) || rows.some(row => row.error || (!row.document && !row.readTime))) {
                     throw new Error('Invalid insight server response');
                 }
-                return makeSnapshot(rows.filter(row => row.document).map(row => row.document));
-            } catch (error) { lastError = error; }
+                const snapshot = makeSnapshot(rows.filter(row => row.document).map(row => row.document));
+                if (!includeDrafts) announceSnapshot(snapshot);
+                return snapshot;
+            } catch (error) {
+                lastError = error;
+                // Authorization and malformed-data failures must not be hidden by a copy.
+                if (/HTTP (400|401|403|404)|Invalid insight/.test(error.message)) throw error;
+            }
+        }
+        if (!includeDrafts && preferStatic) {
+            try {
+                const response = await fetch('data/insights.json', {cache:'no-store', signal:AbortSignal.timeout(8000)});
+                if (!response.ok) throw new Error(`Published copy returned HTTP ${response.status}`);
+                return announceSnapshot(verifiedPublishedCopy(await response.json()));
+            } catch (copyError) { console.warn('Published report copy unavailable:', copyError.message); }
         }
         throw lastError; // A failed read must never become an empty report list.
     }
     async function loadInsightDocument(id) {
         if (!id || id.includes('/')) throw new Error('Invalid report ID');
-        const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents/insights/${encodeURIComponent(id)}?key=${encodeURIComponent(firebaseConfig.apiKey)}`;
+        const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents/insights/${encodeURIComponent(id)}`;
         const authorization = root.getInsightAuthHeaders ? await root.getInsightAuthHeaders() : {};
         const response = await fetch(endpoint, { cache: 'no-store', headers: authorization, signal: AbortSignal.timeout(15000) });
         if (response.status === 404) throw new Error('해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.');
@@ -72,6 +105,13 @@
                 url.hostname === 'vertexaisearch.cloud.google.com') return '';
             return url.href;
         } catch (_) { return ''; }
+    }
+    function getInsightTitle(item, language = 'en') {
+        if (language === 'ko') return item.title || '';
+        if (item.titleEn?.trim()) return item.titleEn;
+        const title = item.sourceVerification?.title;
+        if (getInsightSourceLink(item) && typeof title === 'string' && !/[\uac00-\ud7a3\u3040-\u30ff\u4e00-\u9fff]/.test(title)) return title;
+        return 'Regulatory report';
     }
     function showInsightSourceNotice(linkElement, item) {
         let notice = linkElement.parentElement.querySelector('.source-verification-notice');
@@ -119,8 +159,9 @@
     root.loadInsightSnapshot = loadInsightSnapshot;
     root.loadInsightDocument = loadInsightDocument;
     root.getInsightSourceLink = getInsightSourceLink;
+    root.getInsightTitle = getInsightTitle;
     root.showInsightSourceNotice = showInsightSourceNotice;
     root.requireVerifiedInsight = requireVerifiedInsight;
     root.showInsightLoadError = showInsightLoadError;
-    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, getInsightSourceLink, loadInsightSnapshot };
+    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, getInsightSourceLink, loadInsightSnapshot, verifiedPublishedCopy };
 })(typeof window !== 'undefined' ? window : globalThis);

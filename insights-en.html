@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="SGCA Partners - Tech Blog and Latest Regulatory Updates.">
     <title>Insights | SGCA Partners</title>
-    <link rel="icon" type="image/png" href="images/favicon.png">
-    <link rel="shortcut icon" href="images/favicon.png">
-    <link rel="apple-touch-icon" href="images/favicon.png">
+    <link rel="icon" type="image/png" href="images/favicon-48.png">
+    <link rel="shortcut icon" href="images/favicon-48.png">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
     
     <!-- Social Share (Open Graph) Meta Tags -->
     <meta property="og:title" content="Insights | SGCA Partners">
     <meta property="og:description" content="Check out the latest regulatory trends and expert analysis reports for global key industries.">
-    <meta property="og:image" content="images/og-image.png">
+    <meta property="og:image" content="https://sgca-partners.com/images/og-image.png">
     
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -29,6 +29,7 @@
     <link rel="alternate" hreflang="ja" href="https://sgca-partners.com/insights-jp.html">
     <link rel="alternate" hreflang="zh-Hans" href="https://sgca-partners.com/insights-cn.html">
     <link rel="alternate" hreflang="x-default" href="https://sgca-partners.com/insights.html">
+    <link rel="stylesheet" href="css/site-improvements.css?v=1.0">
 </head>
 <body>
     <header class="navbar">
@@ -253,7 +254,7 @@
                     document.getElementById('published-manage-section').style.display = 'block';
 
                     try {
-                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode, preferStatic: !isAdminMode });
                         allDrafts = [];
                         allPublished = [];
                         snap.forEach(doc => {
@@ -284,7 +285,7 @@
                         html += `
                         <div class="admin-report-row draft-row">
                             <div class="admin-row-info">
-                                <p class="admin-row-title" title="${escHtml(item.titleEn || item.title)}">${escHtml(item.titleEn || item.title)}</p>
+                                <p class="admin-row-title" title="${escHtml(window.getInsightTitle(item, 'en'))}">${escHtml(window.getInsightTitle(item, 'en'))}</p>
                                 <div class="admin-row-meta">
                                     <span>📅 ${formatDate(item.date)}</span>
                                     <span>🏷 ${getCategoryLabel(item.category)}</span>
@@ -324,7 +325,7 @@
                         html += `
                         <div class="admin-report-row published-row">
                             <div class="admin-row-info">
-                                <p class="admin-row-title" title="${escHtml(item.titleEn || item.title)}">${escHtml(item.titleEn || item.title)}</p>
+                                <p class="admin-row-title" title="${escHtml(window.getInsightTitle(item, 'en'))}">${escHtml(window.getInsightTitle(item, 'en'))}</p>
                                 <div class="admin-row-meta">
                                     <span>📅 ${formatDate(item.date)}</span>
                                     <span>🏷 ${getCategoryLabel(item.category)}</span>
@@ -354,7 +355,7 @@
                         alert("Published! The report is now visible on the Insights page.");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode, preferStatic: !isAdminMode });
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -375,7 +376,7 @@
                         alert("Deleted successfully.");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode, preferStatic: !isAdminMode });
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -400,7 +401,7 @@
 
                     document.getElementById('draftPreviewDate').textContent = formatDate(item.date);
                     document.getElementById('draftPreviewCat').textContent = getCategoryLabel(item.category);
-                    document.getElementById('draftPreviewTitle').textContent = item.titleEn || item.title || '';
+                    document.getElementById('draftPreviewTitle').textContent = window.getInsightTitle(item, 'en') || '';
                     document.getElementById('draftPreviewDesc').textContent = item.descEn || item.desc || '';
                     document.getElementById('draftPreviewBody').innerHTML = item.fullContentEn || item.fullContent || item.descEn || item.desc || '';
 
@@ -439,14 +440,15 @@
         </div>
     </section>
 
+<section class="consultation-section" id="contact"><div class="container"><h2>Discuss your requirements</h2><p>Tell us about your product or organization and target market so we can review the applicable requirements and service scope.</p><div class="consultation-actions"><a class="btn btn-primary" href="mailto:sim@sgca-partners.com">Email us</a><a class="btn btn-outline" href="tel:+821092319088">Call us</a></div></div></section>
     <footer class="footer">
         <div class="container footer-content">
             <div class="footer-info">
                 <div class="footer-contact">
                     <span class="contact-label">Phone</span>
-                    <span class="contact-value">+82-10-9231-9088</span>
+                    <span class="contact-value"><a href="tel:+821092319088">+82-10-9231-9088</a></span>
                     <span class="contact-label ms-3">Email</span>
-                    <span class="contact-value">sim@sgca-partners.com</span>
+                    <span class="contact-value"><a href="mailto:sim@sgca-partners.com">sim@sgca-partners.com</a></span>
                 </div>
                 <div class="footer-details">
                     <span>SGCA Partners</span> <span class="divider">|</span>
@@ -495,27 +497,27 @@
     </div>
 
     <!-- Insight Modal -->
-    <div id="insightModal" class="insight-modal">
+    <div id="insightModal" class="insight-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
         <div class="insight-modal-content">
-            <span class="insight-modal-close" onclick="closeInsightModal()">&times;</span>
+            <button type="button" class="insight-modal-close" aria-label="Close report" onclick="closeInsightModal()">&times;</button>
             <div class="insight-modal-header">
-                <span id="modalDate" class="modal-date"></span>
+                <span id="modalDate" class="modal-date"></span><div id="modalProvenance" class="modal-provenance"></div>
                 <h2 id="modalTitle" class="modal-title"></h2>
             </div>
             <div class="insight-modal-body" id="modalBody">
             </div>
             <div class="insight-modal-footer">
-                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" onclick="window.open(this.href, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes'); return false;">View Original Source</a>
+                <a id="modalLink" href="#" class="btn btn-primary" style="display: none;" target="_blank" rel="noopener noreferrer">View Original Source</a>
             </div>
         </div>
     </div>
 
-    <script src="js/main.js?v=1.1"></script>
+    <script src="js/site-navigation.js?v=1.0"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
     <script defer src="js/firebase-init.js?v=1.5"></script>
-    <script defer src="js/insight-data.js?v=2.0"></script>
+    <script defer src="js/insight-data.js?v=2.1"></script>
     <script defer src="js/admin-auth.js?v=2.0"></script>
     <script>
         let allInsights = [];
@@ -564,7 +566,7 @@
             const filteredInsights = allInsights.filter(item => {
                 const matchCategory = currentCategory === 'all' || item.category === currentCategory;
                 const searchStr = searchKeyword.trim().toLowerCase();
-                const titleToSearch = item.titleEn || item.title || '';
+                const titleToSearch = window.getInsightTitle(item, 'en') || '';
                 const descToSearch = item.descEn || item.desc || '';
                 const matchSearch = searchStr === '' || 
                                     titleToSearch.toLowerCase().includes(searchStr) || 
@@ -622,14 +624,14 @@
                 }
 
                 html += `
-                    <div onclick="openInsightModal('${item.id}')" class="rss-card" style="cursor: pointer;">
+                    <a href="?report=${encodeURIComponent(item.id)}" data-report-id="${encodeURIComponent(item.id)}" class="rss-card" style="cursor: pointer;">
                         ${categoryBadge}
                         <div class="rss-content">
                             <span class="rss-date">${dateStr}</span>
-                            <h3 class="rss-title">${highlightText(item.titleEn || item.title, searchKeyword)}</h3>
+                            <h3 class="rss-title">${highlightText(window.getInsightTitle(item, 'en'), searchKeyword)}</h3>
                             <p class="rss-desc" style="margin-top: 5px;">${highlightText(shortDesc, searchKeyword)}</p>
                         </div>
-                    </div>
+                    </a>
                 `;
             });
             
@@ -669,7 +671,7 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">Loading latest reports...</div>';
 
-            window.loadInsightSnapshot({ includeDrafts: isAdminMode }).then((querySnapshot) => {
+            window.loadInsightSnapshot({ includeDrafts: isAdminMode, preferStatic: !isAdminMode }).then((querySnapshot) => {
                 allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const d = { id: doc.id, ...doc.data() };
@@ -695,7 +697,7 @@
             }
 
             document.getElementById('modalDate').textContent = dateStr;
-            document.getElementById('modalTitle').textContent = item.titleEn || item.title;
+            document.getElementById('modalTitle').textContent = window.getInsightTitle(item, 'en');
             const itemFullContent = item.fullContentEn || item.fullContent || '';
             const itemDesc = item.descEn || item.desc || '';
             if (itemFullContent) {

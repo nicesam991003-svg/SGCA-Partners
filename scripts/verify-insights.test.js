@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot } = require('../js/insight-data');
+const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot, verifiedPublishedCopy } = require('../js/insight-data');
+const { publishedDocuments } = require('./build-site');
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
 const { saveToFirestore, validateApiConfiguration } = require('./generate-insight');
 const { reportValues, savePayload } = require('../js/admin-editor');
@@ -59,6 +60,42 @@ test('server document decoding retains missing-date reports, sorts dates and pre
   assert.equal(snapshot.docs[0].data().status, 'draft');
   assert.equal(snapshot.docs[1].data().date, '2026-09-01');
   assert.equal(snapshot.docs[1].data().sourceVerification.status, 'verified');
+});
+
+function publicCopy(project = 'sgca-platform-7abbc') {
+  return {projectId:project,generatedAt:new Date().toISOString(),documents:[{
+    name:`projects/${project}/databases/(default)/documents/insights/verified`,
+    fields:{status:{stringValue:'published'},title:{stringValue:'Verified report'},link:{stringValue:'https://nist.gov/news/verified'},
+      sourceVerification:{mapValue:{fields:{status:{stringValue:'verified'},url:{stringValue:'https://nist.gov/news/verified'},translationAccurate:{booleanValue:true}}}}}
+  }]};
+}
+test('a blocked browser API request can use only a fresh verified published copy', async () => {
+  const original=global.fetch;global.firebaseConfig={projectId:'sgca-platform-7abbc'};let calls=[];
+  global.fetch=async url=>{calls.push(url);if(url.startsWith('https://firestore.googleapis.com/'))throw new TypeError('Failed to fetch');return new Response(JSON.stringify(publicCopy()));};
+  try {
+    const snapshot=await loadInsightSnapshot({preferStatic:true});
+    assert.equal(snapshot.size,1);assert.equal(snapshot.docs[0].data().status,'published');assert.ok(snapshot.generatedAt);
+    assert.equal(calls.at(-1),'data/insights.json');assert.equal(calls.some(url=>url.includes('key=')),false);
+  } finally {global.fetch=original;}
+});
+test('the published copy rejects stale, future, cross-project, draft and unverified content', () => {
+  global.firebaseConfig={projectId:'sgca-platform-7abbc'};const copy=publicCopy();
+  assert.equal(verifiedPublishedCopy(copy).size,1);
+  assert.throws(()=>verifiedPublishedCopy({...copy,generatedAt:'2000-01-01T00:00:00Z'}),/out of date/);
+  assert.throws(()=>verifiedPublishedCopy({...copy,generatedAt:new Date(Date.now()+86400000).toISOString()}),/out of date/);
+  assert.throws(()=>verifiedPublishedCopy(publicCopy('other-project')),/out of date/);
+  copy.documents[0].fields.status.stringValue='draft';assert.throws(()=>verifiedPublishedCopy(copy),/Invalid/);
+  copy.documents[0].fields.status.stringValue='published';copy.documents[0].fields.sourceVerification.mapValue.fields.translationAccurate.booleanValue=false;
+  assert.throws(()=>verifiedPublishedCopy(copy),/Unverified/);
+});
+test('permission failures do not silently switch an administrator or public request to a copy', async () => {
+  const original=global.fetch;let calls=0;global.fetch=async()=>{calls++;return new Response('{}',{status:403});};
+  try {await assert.rejects(loadInsightSnapshot({preferStatic:true}),/403/);assert.equal(calls,1);}finally{global.fetch=original;}
+});
+test('the website export includes only verified published reports and strips unrelated fields', () => {
+  const doc=publicCopy().documents[0];doc.fields.internalNote={stringValue:'not for public export'};
+  const exported=publishedDocuments([{document:doc}]);assert.equal(exported.length,1);assert.equal(exported[0].fields.internalNote,undefined);
+  doc.fields.status.stringValue='draft';assert.throws(()=>publishedDocuments([{document:doc}]),/private/);
 });
 test('no unverified, credential-bearing, unsafe or grounding links reach source buttons', () => {
   for (const link of ['#', 'javascript:alert(1)', 'http://cisa.gov/news', 'https://u:p@cisa.gov/news', 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/x']) assert.equal(getInsightSourceLink({ link }), '');
