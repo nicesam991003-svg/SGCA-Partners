@@ -219,9 +219,9 @@
                 let allDrafts = [];
                 let allPublished = [];
 
-                function checkAdminPassword() {
-                    const pwd = prompt("管理者権限が必要です。\nパスワードを入力してください。");
-                    if (pwd === "banana147!") {
+                async function checkAdminPassword() {
+                    const pwd = await window.requestAdminPassword();
+                    if (pwd !== null && await window.matchesAdminPassword(pwd, "04331dcbd20ad79d6dce668cf3d0035f750e65132cd3fc457cc8b530f33e4aaa")) {
                         isAdminMode = true;
                         loadAdminSections();
                     } else if (pwd !== null) {
@@ -254,7 +254,7 @@
                     document.getElementById('published-manage-section').style.display = 'block';
 
                     try {
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        const snap = await window.loadInsightSnapshot();
                         allDrafts = [];
                         allPublished = [];
                         snap.forEach(doc => {
@@ -350,11 +350,12 @@
                 async function publishDraft(id) {
                     if (!confirm("このレポートをサイトに公開しますか？")) return;
                     try {
+                        await window.requireVerifiedInsight(id);
                         await db.collection("insights").doc(id).update({ status: 'published' });
                         alert("公開完了！レポートがインサイトページに表示されます。");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        const snap = await window.loadInsightSnapshot();
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -362,6 +363,7 @@
                         renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
+                        if (e.message.includes("Verify the original source")) { alert(e.message); return; }
                         alert("公開中にエラーが発生しました。");
                     }
                 }
@@ -374,7 +376,7 @@
                         alert("削除が完了しました。");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await db.collection("insights").orderBy("date", "desc").get();
+                        const snap = await window.loadInsightSnapshot();
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -382,6 +384,7 @@
                         renderInsightCards(3);
                     } catch(e) {
                         console.error(e);
+                        if (e.message.includes("Verify the original source")) { alert(e.message); return; }
                         alert("削除中にエラーが発生しました。");
                     }
                 }
@@ -403,11 +406,15 @@
                     document.getElementById('draftPreviewBody').innerHTML = item.fullContentEn || item.fullContent || item.descEn || item.desc || '';
 
                     const linkEl = document.getElementById('draftPreviewLink');
-                    if (item.link && item.link !== '#') {
-                        linkEl.href = item.link;
+                    window.showInsightSourceNotice(linkEl, item);
+            const sourceLink = window.getInsightSourceLink(item);
+            if (sourceLink) {
+                        linkEl.href = sourceLink;
+                linkEl.rel = 'noopener noreferrer';
                         linkEl.style.display = 'inline-block';
                     } else {
-                        linkEl.style.display = 'none';
+                        linkEl.removeAttribute('href');
+                linkEl.style.display = 'none';
                     }
 
                     document.getElementById('draftPreviewPublishBtn').onclick = () => {
@@ -507,7 +514,9 @@
     <script src="js/main.js?v=1.1"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.3"></script>
+    <script defer src="js/firebase-init.js?v=1.4"></script>
+    <script defer src="js/insight-data.js?v=1.0"></script>
+    <script defer src="js/admin-access.js?v=1.0"></script>
     <script>
         let allInsights = [];
         let currentCategory = 'all';
@@ -543,7 +552,7 @@
         window.renderInsightCards = function(count = 6) {
             const container = document.getElementById('rss-feed-container');
             
-            if (!db) {
+            if (!window.loadInsightSnapshot) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 60px 0;">
                         <div class="error-text" style="color: #e74c3c; margin-bottom: 20px; padding: 0;">js/firebase-init.jsにFirebase設定を入力してください。</div>
@@ -640,7 +649,7 @@
         };
 
         document.addEventListener('DOMContentLoaded', async function() {
-            if (!db) {
+            if (!window.loadInsightSnapshot) {
                 renderInsightCards(6);
                 return;
             }
@@ -660,7 +669,7 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">最新レポートを読み込んでいます...</div>';
 
-            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
+            window.loadInsightSnapshot().then((querySnapshot) => {
                 allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const d = { id: doc.id, ...doc.data() };
@@ -671,7 +680,7 @@
                 renderInsightCards(currentCount);
             }).catch((error) => {
                 console.error("Data load failure: ", error);
-                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">レポートの読み込み中にエラーが発生しました。コンソールを確認してください。</p>`;
+                window.showInsightLoadError(container);
             });
         });
 
@@ -696,10 +705,14 @@
             }
             
             const linkEl = document.getElementById('modalLink');
-            if (item.link && item.link !== '#') {
-                linkEl.href = item.link;
+            window.showInsightSourceNotice(linkEl, item);
+            const sourceLink = window.getInsightSourceLink(item);
+            if (sourceLink) {
+                linkEl.href = sourceLink;
+                linkEl.rel = 'noopener noreferrer';
                 linkEl.style.display = 'inline-block';
             } else {
+                linkEl.removeAttribute('href');
                 linkEl.style.display = 'none';
             }
 

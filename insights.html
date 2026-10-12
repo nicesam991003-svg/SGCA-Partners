@@ -216,9 +216,9 @@
                 let allDrafts = [];
                 let allPublished = [];
 
-                function checkAdminPassword() {
-                    const pwd = prompt("관리자 권한이 필요합니다.\n비밀번호를 입력해 주세요.");
-                    if (pwd === "banana147!") {
+                async function checkAdminPassword() {
+                    const pwd = await window.requestAdminPassword();
+                    if (pwd !== null && await window.matchesAdminPassword(pwd, "04331dcbd20ad79d6dce668cf3d0035f750e65132cd3fc457cc8b530f33e4aaa")) {
                         isAdminMode = true;
                         loadAdminSections();
                     } else if (pwd !== null) {
@@ -333,11 +333,13 @@
                 async function publishDraft(id) {
                     if (!confirm("이 리포트를 사이트에 게시하시겠습니까?")) return;
                     try {
+                        await window.requireVerifiedInsight(id);
                         await db.collection("insights").doc(id).update({ status: 'published' });
                         alert("게시 완료! 리포트가 인사이트 페이지에 표시됩니다.");
                         await window.fetchInsightsAndRender();
                     } catch(e) {
                         console.error(e);
+                        if (e.message.includes("Verify the original source")) { alert(e.message); return; }
                         alert("게시 중 오류가 발생했습니다.");
                     }
                 }
@@ -351,6 +353,7 @@
                         await window.fetchInsightsAndRender();
                     } catch(e) {
                         console.error(e);
+                        if (e.message.includes("Verify the original source")) { alert(e.message); return; }
                         alert("삭제 중 오류가 발생했습니다.");
                     }
                 }
@@ -375,11 +378,15 @@
                     document.getElementById('draftPreviewBody').innerHTML = item.fullContent || item.desc || '';
 
                     const linkEl = document.getElementById('draftPreviewLink');
-                    if (item.link && item.link !== '#') {
-                        linkEl.href = item.link;
+                    window.showInsightSourceNotice(linkEl, item);
+            const sourceLink = window.getInsightSourceLink(item);
+            if (sourceLink) {
+                        linkEl.href = sourceLink;
+                linkEl.rel = 'noopener noreferrer';
                         linkEl.style.display = 'inline-block';
                     } else {
-                        linkEl.style.display = 'none';
+                        linkEl.removeAttribute('href');
+                linkEl.style.display = 'none';
                     }
 
                     // 등록 버튼에 현재 id 바인딩
@@ -486,7 +493,9 @@
     <script src="js/main.js?v=1.1"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.3"></script>
+    <script defer src="js/firebase-init.js?v=1.4"></script>
+    <script defer src="js/insight-data.js?v=1.0"></script>
+    <script defer src="js/admin-access.js?v=1.0"></script>
     <script>
         // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
         let allInsights = [];
@@ -523,7 +532,7 @@
         window.renderInsightCards = function(count = 6) {
             const container = document.getElementById('rss-feed-container');
             
-            if (!db) {
+            if (!window.loadInsightSnapshot) {
                 container.innerHTML = `
                     <div style="text-align: center; padding: 60px 0;">
                         <div class="error-text" style="color: #e74c3c; margin-bottom: 20px; padding: 0;">js/firebase-init.js 파일에서 Firebase 설정(Config)을 입력해 주세요.</div>
@@ -624,7 +633,7 @@
                 insightsUnsubscribe();
             }
             try {
-                db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
+                return window.loadInsightSnapshot().then((querySnapshot) => {
                     allInsights = [];
                     allDrafts = [];
                     allPublished = [];
@@ -649,16 +658,16 @@
                     }
                 }).catch((error) => {
                     console.error("데이터 로드 실패: ", error);
-                    container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+                    window.showInsightLoadError(container);
                 });
             } catch (error) {
                 console.error("데이터 로드 실패: ", error);
-                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 100px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
+                window.showInsightLoadError(container);
             }
         };
 
         document.addEventListener('DOMContentLoaded', async function() {
-            if (!db) {
+            if (!window.loadInsightSnapshot) {
                 renderInsightCards(6);
                 return;
             }
@@ -700,10 +709,14 @@
             }
             
             const linkEl = document.getElementById('modalLink');
-            if (item.link && item.link !== '#') {
-                linkEl.href = item.link;
+            window.showInsightSourceNotice(linkEl, item);
+            const sourceLink = window.getInsightSourceLink(item);
+            if (sourceLink) {
+                linkEl.href = sourceLink;
+                linkEl.rel = 'noopener noreferrer';
                 linkEl.style.display = 'inline-block';
             } else {
+                linkEl.removeAttribute('href');
                 linkEl.style.display = 'none';
             }
 

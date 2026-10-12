@@ -41,9 +41,11 @@
         <div class="admin-container">
             <div class="admin-header">
                 <h2>인사이트 리포트 등록</h2>
-                <p>이곳에서 작성한 내용은 인사이트(Insight) 페이지에 실시간 카드 뉴스로 반영됩니다.</p>
+                <p>기존 리포트와 자동 생성 초안을 불러와 수정할 수 있습니다. 원문과 번역을 확인한 뒤 게시합니다.</p>
             </div>
 
+            <p id="editor-load-status" role="status" style="margin:16px 0;"></p>
+            <button type="button" id="start-new-report" class="btn-edit">새 리포트 직접 작성</button>
             <form id="admin-form">
                 <div class="form-group">
                     <label>리포트 제목</label>
@@ -65,15 +67,15 @@
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>원문 링크 URL (선택사항)</label>
-                    <input type="url" id="post-link" placeholder="예: https://blog.naver.com/... (카드 클릭 시 이동할 주소)">
+                    <label>원문 링크 URL</label>
+                    <input type="url" id="post-link" placeholder="기관 원문 페이지의 HTTPS 주소">
                 </div>
                 <div class="form-group">
                     <label>요약 내용</label>
                     <textarea id="post-desc" required placeholder="리포트의 핵심 내용을 2~3줄로 요약해 주세요."></textarea>
                 </div>
                 <div class="form-group">
-                    <label>원문 내용 (보고서 양식 유지 가능)</label>
+                    <label>한국어 리포트 본문</label>
                     <div id="editor-container" style="height: 350px; background: white;"></div>
                 </div>
                 <div style="border-top: 1px solid #ddd; margin-top: 30px; padding-top: 20px;">
@@ -87,9 +89,13 @@
                         <textarea id="post-desc-en" placeholder="Enter english summary"></textarea>
                     </div>
                     <div class="form-group">
-                        <label>영문 원문 내용</label>
+                        <label>영문 리포트 본문</label>
                         <div id="editor-container-en" style="height: 350px; background: white;"></div>
                     </div>
+                </div>
+                <div class="form-group">
+                    <label><input type="checkbox" id="source-reviewed"> 원문 페이지의 제목·본문·발행일과 한국어 번역을 확인했습니다. 게시를 승인합니다.</label>
+                    <p style="font-size:0.85rem;">출처를 확인하지 않은 신규·수정 리포트는 초안으로 저장됩니다.</p>
                 </div>
                 <button type="submit" class="btn-submit">새 리포트 등록하기</button>
             </form>
@@ -105,233 +111,8 @@
 
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.3"></script>
-    <script>
-        // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
-        let editingId = null;
-        let adminPosts = [];
-        let isFirstLoad = true;
-
-        // Firebase 데이터 로드 및 실시간 렌더링
-        function initListListener() {
-            const container = document.getElementById('post-list-container');
-            container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">데이터를 불러오는 중입니다...</p>';
-
-            db.collection("insights").orderBy("date", "desc").onSnapshot((querySnapshot) => {
-                adminPosts = [];
-                querySnapshot.forEach((doc) => {
-                    adminPosts.push({ id: doc.id, ...doc.data() });
-                });
-
-                if (adminPosts.length === 0) {
-                    container.innerHTML = '<p style="color:#8892b0; text-align:center; padding: 30px 0;">현재 등록된 리포트가 없습니다.</p>';
-                    return;
-                }
-
-                let html = '';
-                adminPosts.forEach(post => {
-                    let categoryLabel = '';
-                    switch(post.category) {
-                        case 'management-system': categoryLabel = '경영시스템인증'; break;
-                        case 'cyber-security': categoryLabel = '사이버보안'; break;
-                        case 'product-certification': categoryLabel = '제품인증'; break;
-                        default: categoryLabel = '미분류';
-                    }
-                    const statusBadge = post.status === 'draft' ? '<span style="color:#f59e0b; font-weight:bold;">[초안]</span>' : '';
-                    html += `
-                        <div class="admin-item">
-                            <div class="admin-item-info">
-                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
-                                    <span style="font-size:0.75rem; background:#f0f0f0; padding:2px 8px; border-radius:10px; color:#666;">${categoryLabel}</span>
-                                    ${statusBadge}
-                                    <h4 style="margin:0;">${globalEscHtml(post.title)}</h4>
-                                </div>
-                                <p>${post.date || ''} &nbsp;|&nbsp; ${(post.desc || '').substring(0, 40)}...</p>
-                            </div>
-                            <div style="white-space: nowrap;">
-                                <button type="button" class="btn-edit" data-id="${post.id}">수정</button>
-                                <button type="button" class="btn-delete" data-id="${post.id}">삭제</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
-
-                // 수정 버튼 이벤트 리스너 추가
-                document.querySelectorAll('.btn-edit').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const target = e.target;
-                        editingId = target.getAttribute('data-id');
-                        const post = adminPosts.find(p => p.id === editingId);
-                        if (!post) return;
-
-                        document.getElementById('post-title').value = post.title;
-                        document.getElementById('post-category').value = post.category || '';
-                        document.getElementById('post-date').value = post.date;
-                        document.getElementById('post-link').value = post.link === '#' ? '' : post.link;
-                        document.getElementById('post-desc').value = post.desc;
-                        window.quill.root.innerHTML = post.fullContent || '';
-                        document.getElementById('post-title-en').value = post.titleEn || '';
-                        document.getElementById('post-desc-en').value = post.descEn || '';
-                        window.quillEn.root.innerHTML = post.fullContentEn || '';
-                        
-                        document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    });
-                });
-
-                // 삭제 버튼 이벤트 리스너 추가
-                document.querySelectorAll('.btn-delete').forEach(btn => {
-                    btn.addEventListener('click', async (e) => {
-                        const id = e.target.getAttribute('data-id');
-                        if(confirm('정말 이 리포트를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
-                            try {
-                                await db.collection("insights").doc(id).delete();
-                                alert('삭제되었습니다.');
-                                
-                                if (editingId === id) {
-                                    editingId = null;
-                                    document.getElementById('admin-form').reset();
-                                    window.quill.root.innerHTML = '';
-                                    document.getElementById('post-date').valueAsDate = new Date();
-                                    document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
-                                }
-                            } catch (error) {
-                                console.error("Error removing document: ", error);
-                                alert("삭제 중 오류가 발생했습니다. (Firebase 설정을 확인하세요)");
-                            }
-                        }
-                    });
-                });
-
-                // 첫 로드 시 URL 파라미터 체크하여 수정 모드로 자동 진입
-                if (isFirstLoad) {
-                    isFirstLoad = false;
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const editId = urlParams.get('edit');
-                    if (editId) {
-                        const post = adminPosts.find(p => p.id === editId);
-                        if (post) {
-                            editingId = editId;
-                            document.getElementById('post-title').value = post.title || '';
-                            document.getElementById('post-category').value = post.category || '';
-                            document.getElementById('post-date').value = post.date || '';
-                            document.getElementById('post-link').value = (post.link && post.link !== '#') ? post.link : '';
-                            document.getElementById('post-desc').value = post.desc || '';
-                            window.quill.root.innerHTML = post.fullContent || '';
-                            document.querySelector('.btn-submit').textContent = '리포트 수정 완료';
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                            history.replaceState(null, '', 'admin.html');
-                        } else {
-                            alert('해당 리포트를 찾을 수 없습니다. 이미 삭제되었거나 ID가 잘못되었습니다.');
-                        }
-                    }
-                }
-
-            }, (error) => {
-                console.error("데이터 로드 실패: ", error);
-                container.innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 30px 0;">Firebase 설정이 완료되지 않았거나 오류가 발생했습니다.<br>콘솔(F12)을 확인하세요.</p>`;
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            document.getElementById('post-date').valueAsDate = new Date();
-            
-            // Quill Editor 초기화
-            window.quill = new Quill('#editor-container', {
-                theme: 'snow',
-                placeholder: '리포트의 전체 번역 내용을 자유롭게 작성하거나 구글 문서(Doc)에서 복사해 붙여넣어 주세요.',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['link', 'image'],
-                        ['clean']
-                    ]
-                }
-            });
-
-            window.quillEn = new Quill('#editor-container-en', {
-                theme: 'snow',
-                placeholder: 'Enter english full content here...',
-                modules: {
-                    toolbar: [
-                        [{ 'header': [1, 2, 3, false] }],
-                        ['bold', 'italic', 'underline', 'strike'],
-                        [{ 'color': [] }, { 'background': [] }],
-                        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                        ['link', 'image'],
-                        ['clean']
-                    ]
-                }
-            });
-            
-            // db 객체가 정상적으로 불러와졌는지 확인 후 실시간 리스너 시작
-            if(db) {
-                initListListener();
-            } else {
-                document.getElementById('post-list-container').innerHTML = `<p style="color:#e74c3c; text-align:center; padding: 30px 0;">js/firebase-init.js 파일에서 Firebase 설정(Config)을 입력해 주세요.</p>`;
-            }
-
-            document.getElementById('admin-form').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                if(!db) {
-                    alert('Firebase가 연결되지 않았습니다. js/firebase-init.js를 확인해주세요.');
-                    return;
-                }
-
-                const title = document.getElementById('post-title').value;
-                const category = document.getElementById('post-category').value;
-                const date = document.getElementById('post-date').value;
-                const link = document.getElementById('post-link').value || '#';
-                const desc = document.getElementById('post-desc').value;
-                
-                // 에디터 내용이 비어있는 경우 (기본값인 빈 <p><br></p> 등 처리)
-                let fullContent = window.quill.root.innerHTML;
-                if (window.quill.getText().trim() === '' && !fullContent.includes('<img')) {
-                    fullContent = '';
-                }
-
-                const titleEn = document.getElementById('post-title-en').value;
-                const descEn = document.getElementById('post-desc-en').value;
-                let fullContentEn = window.quillEn.root.innerHTML;
-                if (window.quillEn.getText().trim() === '' && !fullContentEn.includes('<img')) {
-                    fullContentEn = '';
-                }
-
-                try {
-                    if (editingId) {
-                        // 기존 리포트 수정 (초안 승인 효과 포함)
-                        await db.collection("insights").doc(editingId).update({
-                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn, status: 'published'
-                        });
-                        alert('인사이트 리포트가 성공적으로 수정 및 게시되었습니다!');
-                        editingId = null;
-                        document.querySelector('.btn-submit').textContent = '새 리포트 등록하기';
-                    } else {
-                        // 새 리포트 등록
-                        await db.collection("insights").add({
-                            title, titleEn, category, date, link, desc, descEn, fullContent, fullContentEn, status: 'published', createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        });
-                        alert('인사이트 리포트가 성공적으로 등록되었습니다!');
-                    }
-                    
-                    // 폼 초기화 및 오늘 날짜 재설정
-                    this.reset();
-                    window.quill.root.innerHTML = '';
-                    window.quillEn.root.innerHTML = '';
-                    document.getElementById('post-title-en').value = '';
-                    document.getElementById('post-desc-en').value = '';
-                    document.getElementById('post-date').valueAsDate = new Date();
-                } catch (error) {
-                    console.error("문서 저장 중 오류: ", error);
-                    alert("저장 중 오류가 발생했습니다. Firebase 설정을 확인하세요.");
-                }
-            });
-        });
-    </script>
+    <script defer src="js/firebase-init.js?v=1.4"></script>
+    <script defer src="js/insight-data.js?v=1.0"></script>
+    <script defer src="js/admin-editor.js?v=1.0"></script>
 </body>
 </html>

@@ -279,21 +279,22 @@
     <script src="js/main.js?v=1.1"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.3"></script>
+    <script defer src="js/firebase-init.js?v=1.4"></script>
+    <script defer src="js/insight-data.js?v=1.0"></script>
     <script>
         // Global db variable is configured in js/firebase-init.js.
 
         document.addEventListener('DOMContentLoaded', async function() {
             const container = document.getElementById('main-rss-feed-container');
             
-            if (!db) {
+            if (!window.loadInsightSnapshot) {
                 container.innerHTML = '<p style="text-align:center; color:#e74c3c; padding:40px 0;">请在 js/firebase-init.js 中输入 Firebase 配置。</p>';
                 return;
             }
 
             container.innerHTML = '<p style="text-align:center; color:rgba(255,255,255,0.5); padding:40px 0;">Loading latest reports...</p>';
 
-            db.collection("insights").orderBy("date", "desc").get().then((querySnapshot) => {
+            window.loadInsightSnapshot().then((querySnapshot) => {
                 window.allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
@@ -365,7 +366,7 @@
                 container.innerHTML = html;
             }).catch((error) => {
                 console.error("Data load failure: ", error);
-                container.innerHTML = `<p style="text-align:center; color:#e74c3c; padding: 40px 0;">加载报告时出错。请检查控制台。</p>`;
+                window.showInsightLoadError(container);
             });
         });
 
@@ -390,10 +391,14 @@
             }
             
             const linkEl = document.getElementById('modalLink');
-            if (item.link && item.link !== '#') {
-                linkEl.href = item.link;
+            window.showInsightSourceNotice(linkEl, item);
+            const sourceLink = window.getInsightSourceLink(item);
+            if (sourceLink) {
+                linkEl.href = sourceLink;
+                linkEl.rel = 'noopener noreferrer';
                 linkEl.style.display = 'inline-block';
             } else {
+                linkEl.removeAttribute('href');
                 linkEl.style.display = 'none';
             }
 

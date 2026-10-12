@@ -22,7 +22,10 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
+
+      - name: Verify source and translation safeguards
+        run: npm test
 
       - name: Generate and save draft insight
         env:

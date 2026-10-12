@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "SGCA Partners 인사이트 자동 생성 스크립트",
   "scripts": {
-    "generate": "node scripts/generate-insight.js"
+    "generate": "node scripts/generate-insight.js",
+    "test": "node --test scripts/verify-insights.test.js"
   },
   "engines": {
     "node": ">=20"
