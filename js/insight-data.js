@@ -23,16 +23,24 @@
         }).sort((a, b) => b.data().date.localeCompare(a.data().date) || a.id.localeCompare(b.id));
         return { empty: docs.length === 0, size: docs.length, docs, forEach: fn => docs.forEach(fn) };
     }
-    async function loadInsightSnapshot() {
+    async function loadInsightSnapshot({ includeDrafts = false } = {}) {
         // REST queries are authoritative server reads; SDK cache/WebChannel transport is bypassed.
         // No orderBy: Firestore excludes documents lacking the ordered field.
         const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents:runQuery?key=${encodeURIComponent(firebaseConfig.apiKey)}`;
+        const query = { from: [{ collectionId: 'insights' }] };
+        let authorization = {};
+        if (includeDrafts) {
+            if (!root.requireAdminAccess || !await root.requireAdminAccess()) throw new Error('Administrator sign in is required.');
+            authorization = await root.getInsightAuthHeaders();
+        } else {
+            query.where = { fieldFilter: { field: { fieldPath: 'status' }, op: 'EQUAL', value: { stringValue: 'published' } } };
+        }
         let lastError;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
                 const response = await fetch(endpoint, {
-                    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ structuredQuery: { from: [{ collectionId: 'insights' }] } }),
+                    method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', ...authorization },
+                    body: JSON.stringify({ structuredQuery: query }),
                     signal: AbortSignal.timeout(15000)
                 });
                 if (!response.ok) throw new Error(`Insight server returned HTTP ${response.status}`);
@@ -48,7 +56,8 @@
     async function loadInsightDocument(id) {
         if (!id || id.includes('/')) throw new Error('Invalid report ID');
         const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents/insights/${encodeURIComponent(id)}?key=${encodeURIComponent(firebaseConfig.apiKey)}`;
-        const response = await fetch(endpoint, { cache: 'no-store', signal: AbortSignal.timeout(15000) });
+        const authorization = root.getInsightAuthHeaders ? await root.getInsightAuthHeaders() : {};
+        const response = await fetch(endpoint, { cache: 'no-store', headers: authorization, signal: AbortSignal.timeout(15000) });
         if (response.status === 404) throw new Error('해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.');
         if (!response.ok) throw new Error(`리포트 조회 실패 (HTTP ${response.status})`);
         const doc = await response.json();
@@ -85,7 +94,7 @@
     async function requireVerifiedInsight(id) {
         const doc = await root.db.collection('insights').doc(id).get({ source: 'server' });
         const item = doc.data();
-        if (!item || !getInsightSourceLink(item) || !['verified', 'manual_reviewed'].includes(item.sourceVerification?.status) || item.link !== item.sourceVerification.url) {
+        if (!item || !getInsightSourceLink(item) || item.sourceVerification?.translationAccurate !== true || !['verified', 'manual_reviewed'].includes(item.sourceVerification?.status) || item.link !== item.sourceVerification.url) {
             throw new Error('원문 출처를 확인한 뒤 관리자 편집 화면에서 승인하세요. / Verify the original source in the report editor before publication.');
         }
     }

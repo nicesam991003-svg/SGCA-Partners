@@ -12,8 +12,14 @@ Do not reuse a Firebase browser key for Gemini. The generator rejects configurat
 4. If a key allowed services that should remain private, configure and test a replacement, revoke the old key, and review available usage logs. Update all consumers before revocation to avoid an outage.
 5. Close a GitHub alert with a truthful resolution and evidence. Do not claim revocation unless it happened. An intentionally public, adequately restricted Firebase key can be documented as such after checking the configuration. Do not disable scanning or rewrite key strings simply to hide an unresolved alert.
 
-As of the 2026-10-12 audit, unauthenticated Firestore writes were accepted and owning-project access was required to repair the server configuration. API restrictions had not yet been verified. Do not treat this document or the browser password masking as completion of that server hardening.
+The owning account for `sgca-platform-7abbc` is `sim@sgca-partners.com`. Keep this company project. The separate personal project `sgca-platform` is not the website's database.
 
-The automatic generator currently writes through the Firestore REST API using the Firebase key. Moving database writes to an authenticated server identity must accompany tightening Firestore rules, or the generator and existing administrator flow will stop working.
+The security implementation replaces the shared browser password with Google authentication. Firestore rules allow only published reports to unauthenticated readers. Draft reads and all browser writes require a verified `sim@sgca-partners.com` Google sign-in. Publishing requires matching verified source metadata and reviewed translation. Enable the Google provider and authorize the site's domains before deploying the administrator UI and rules.
+
+The weekly generator uses GitHub OIDC through `sgca-insight-generator@sgca-platform-7abbc.iam.gserviceaccount.com`. Its custom role grants database metadata, entity read/list, and create permissions only, without update or delete. The provider restricts tokens to repository ID `1234348521`, owner ID `283300781`, main, and `.github/workflows/weekly-insight.yml`. Do not create a long-lived service-account key. Manual workflow runs default to read-only access verification.
+
+The intended public key restrictions are Firestore, Firebase Management, Identity Toolkit and Token Service APIs, with website referrers for `sgca-partners.com`, `www.sgca-partners.com` and this project's Firebase Hosting domains. Never enable Generative Language on this key.
+
+Local checks: 12 source, translation and administrator tests, plus five Firestore emulator permission tests. Deployment and Cloud settings must be verified independently; passing local tests alone does not prove that production rules or key restrictions were applied. During the initial audit, anonymous writes were accepted, so do not close the alert until production protection is verified.
 
 References: [Firebase API keys](https://firebase.google.com/docs/projects/api-keys), [Firestore authentication and authorization](https://firebase.google.com/docs/firestore/security/rules-conditions), [GitHub alert resolution](https://docs.github.com/en/code-security/how-tos/manage-security-alerts/manage-secret-scanning-alerts/resolving-alerts).

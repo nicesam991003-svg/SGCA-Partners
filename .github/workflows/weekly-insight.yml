@@ -5,12 +5,19 @@ on:
     # 매주 월요일 KST 07:00 = UTC 일요일 22:00
     - cron: '0 22 * * 0'
   workflow_dispatch:
-    # 수동 실행도 가능 (테스트용)
+    inputs:
+      verify_only:
+        description: 'Verify authenticated Firestore read without generating reports'
+        type: boolean
+        default: true
 
 jobs:
   generate-insight:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -27,9 +34,22 @@ jobs:
       - name: Verify source and translation safeguards
         run: npm test
 
+      - name: Authenticate the report generator to company Firestore
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: sgca-platform-7abbc
+          workload_identity_provider: projects/1076998535653/locations/global/workloadIdentityPools/sgca-github/providers/github
+          service_account: sgca-insight-generator@sgca-platform-7abbc.iam.gserviceaccount.com
+
       - name: Generate and save draft insight
+        if: github.event_name != 'workflow_dispatch' || !inputs.verify_only
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_PROJECT_ID: sgca-platform-7abbc
         run: node scripts/generate-insight.js
+
+      - name: Verify authenticated Firestore access
+        if: github.event_name == 'workflow_dispatch' && inputs.verify_only
+        env:
+          FIREBASE_PROJECT_ID: sgca-platform-7abbc
+        run: node scripts/generate-insight.js --verify-access

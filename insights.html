@@ -217,13 +217,12 @@
                 let allPublished = [];
 
                 async function checkAdminPassword() {
-                    const pwd = await window.requestAdminPassword();
-                    if (pwd !== null && await window.matchesAdminPassword(pwd, "04331dcbd20ad79d6dce668cf3d0035f750e65132cd3fc457cc8b530f33e4aaa")) {
+                    try {
+                        await window.requireAdminAccess({ interactive: true });
                         isAdminMode = true;
-                        loadAdminSections();
-                    } else if (pwd !== null) {
-                        alert("비밀번호가 일치하지 않습니다.");
-                    }
+                        if (window.fetchInsightsAndRender) await window.fetchInsightsAndRender();
+                        await loadAdminSections();
+                    } catch (error) { alert(error.message); }
                 }
 
                 function getCategoryLabel(cat) {
@@ -493,9 +492,10 @@
     <script src="js/main.js?v=1.1"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.4"></script>
-    <script defer src="js/insight-data.js?v=1.0"></script>
-    <script defer src="js/admin-access.js?v=1.0"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script defer src="js/firebase-init.js?v=1.5"></script>
+    <script defer src="js/insight-data.js?v=2.0"></script>
+    <script defer src="js/admin-auth.js?v=2.0"></script>
     <script>
         // 전역 db 변수는 js/firebase-init.js에서 설정됩니다.
         let allInsights = [];
@@ -633,7 +633,7 @@
                 insightsUnsubscribe();
             }
             try {
-                return window.loadInsightSnapshot().then((querySnapshot) => {
+                return window.loadInsightSnapshot({ includeDrafts: isAdminMode }).then((querySnapshot) => {
                     allInsights = [];
                     allDrafts = [];
                     allPublished = [];

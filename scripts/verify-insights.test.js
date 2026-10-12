@@ -4,6 +4,7 @@ const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot } = require('../
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
 const { saveToFirestore, validateApiConfiguration } = require('./generate-insight');
 const { reportValues, savePayload } = require('../js/admin-editor');
+const { isAdministrator } = require('../js/admin-auth');
 const page = '<html><head><title>NIST publishes OT guide</title><meta property="article:published_time" content="2026-10-09"></head><main>' + 'NIST publishes new guidance for securing operational technology systems. '.repeat(5) + '</main></html>';
 
 test('generator rejects a public Firebase key used as the Gemini secret without exposing key values', () => {
@@ -17,6 +18,35 @@ test('generator rejects a public Firebase key used as the Gemini secret without 
     });
   }
   assert.throws(() => validateApiConfiguration({ ...env, GEMINI_API_KEY: '' }, 'public-browser-example'), /환경변수/);
+});
+
+test('administrator UI requires the verified company Google identity', () => {
+  const administrator = { email: 'sim@sgca-partners.com', emailVerified: true, providerData: [{ providerId: 'google.com' }] };
+  assert.equal(isAdministrator(administrator), true);
+  assert.equal(isAdministrator({ ...administrator, email: 'nicesam991003@gmail.com' }), false);
+  assert.equal(isAdministrator({ ...administrator, emailVerified: false }), false);
+  assert.equal(isAdministrator({ ...administrator, providerData: [{ providerId: 'password' }] }), false);
+  assert.equal(isAdministrator(null), false);
+});
+
+test('public requests query only published reports; drafts require an authenticated administrator', async () => {
+  const previous = { fetch: global.fetch, require: global.requireAdminAccess, headers: global.getInsightAuthHeaders };
+  global.firebaseConfig = { projectId: 'demo-sgca', apiKey: 'example' };
+  const calls = [];
+  global.fetch = async (url, options) => { calls.push(options); return new Response(JSON.stringify([{ readTime: '2026-10-12T00:00:00Z' }])); };
+  try {
+    await loadInsightSnapshot();
+    assert.equal(JSON.parse(calls[0].body).structuredQuery.where.fieldFilter.value.stringValue, 'published');
+    assert.equal(calls[0].headers.Authorization, undefined);
+    global.requireAdminAccess = async () => null;
+    await assert.rejects(loadInsightSnapshot({ includeDrafts: true }), /sign in/);
+    assert.equal(calls.length, 1);
+    global.requireAdminAccess = async () => ({ email: 'sim@sgca-partners.com' });
+    global.getInsightAuthHeaders = async () => ({ Authorization: 'Bearer simulated-token' });
+    await loadInsightSnapshot({ includeDrafts: true });
+    assert.equal(JSON.parse(calls[1].body).structuredQuery.where, undefined);
+    assert.equal(calls[1].headers.Authorization, 'Bearer simulated-token');
+  } finally { global.fetch = previous.fetch; global.requireAdminAccess = previous.require; global.getInsightAuthHeaders = previous.headers; }
 });
 
 test('server document decoding retains missing-date reports, sorts dates and preserves draft status', () => {

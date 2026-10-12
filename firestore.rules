@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdministrator() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'sim@sgca-partners.com'
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function validReport() {
+      let report = request.resource.data;
+      return report.keys().hasAll(['title', 'category', 'date', 'status', 'sourceVerification'])
+        && report.title is string && report.title.size() > 0
+        && report.category in ['management-system', 'cyber-security', 'product-certification']
+        && report.status in ['draft', 'published']
+        && (report.status == 'draft'
+          || (report.link is string && report.link.matches('https://.*')
+            && report.sourceVerification.status in ['verified', 'manual_reviewed']
+            && report.sourceVerification.url == report.link
+            && report.sourceVerification.translationAccurate == true));
+    }
+    match /insights/{reportId} {
+      allow get, list: if resource.data.status == 'published' || isAdministrator();
+      allow create, update: if isAdministrator() && validReport();
+      allow delete: if isAdministrator();
+    }
+    match /{document=**} { allow read, write: if false; }
+  }
+}

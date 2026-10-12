@@ -5,20 +5,20 @@
  */
 
 const https = require('https');
+const { GoogleAuth } = require('google-auth-library');
 const { SOURCE_DOMAINS, cleanUrl, fetchSource, verifyEvidence, firestoreValue } = require('./source-verification');
 
 // ─────────────────────────────────────────
 // 1. 환경변수 확인
 // ─────────────────────────────────────────
 const GEMINI_API_KEY      = process.env.GEMINI_API_KEY;
-const FIREBASE_API_KEY    = process.env.FIREBASE_API_KEY;
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 
 function validateApiConfiguration(env, publicFirebaseKey) {
   const gemini = env.GEMINI_API_KEY?.trim();
   const firebase = env.FIREBASE_API_KEY?.trim();
-  if (!gemini || !firebase || !env.FIREBASE_PROJECT_ID?.trim()) {
-    throw new Error('필수 환경변수 누락: GEMINI_API_KEY, FIREBASE_API_KEY, FIREBASE_PROJECT_ID');
+  if (!gemini || !env.FIREBASE_PROJECT_ID?.trim()) {
+    throw new Error('필수 환경변수 누락: GEMINI_API_KEY, FIREBASE_PROJECT_ID');
   }
   if (gemini === firebase || gemini === publicFirebaseKey) {
     throw new Error('공개 Firebase 웹 키를 Gemini에 사용할 수 없습니다. Gemini 전용 비공개 API 키를 설정하세요.');
@@ -55,6 +55,11 @@ function httpsRequest(method, hostname, path, headers, body) {
 }
 const httpsPost = (h, p, hd, b) => httpsRequest('POST', h, p, hd, b);
 const httpsGet = (h, p, hd) => httpsRequest('GET', h, p, hd);
+const firestoreAuthentication = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/datastore'] });
+async function firestoreHeaders() {
+  const headers = await firestoreAuthentication.getRequestHeaders();
+  return typeof headers.entries === 'function' ? Object.fromEntries(headers.entries()) : headers;
+}
 
 // ─────────────────────────────────────────
 // 2.1. 기존 Firestore 리포트 가져오기 (중복 수집 방지용)
@@ -63,8 +68,8 @@ async function getExistingReports() {
   const reports = [];
   let pageToken = '';
   do {
-    const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?key=${FIREBASE_API_KEY}&pageSize=100${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
-    const res = await httpsGet('firestore.googleapis.com', path, {});
+    const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?pageSize=100${pageToken ? '&pageToken=' + encodeURIComponent(pageToken) : ''}`;
+    const res = await httpsGet('firestore.googleapis.com', path, await firestoreHeaders());
     if (res.status !== 200) throw new Error(`Existing reports read failed (HTTP ${res.status})`);
     for (const doc of res.body.documents || []) reports.push({ title: doc.fields?.title?.stringValue || '', link: doc.fields?.link?.stringValue || '' });
     pageToken = res.body.nextPageToken || '';
@@ -365,9 +370,9 @@ async function saveToFirestore(report) {
   };
 
   const hostname = 'firestore.googleapis.com';
-  const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights?key=${FIREBASE_API_KEY}`;
+  const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights`;
   
-  const res = await httpsPost(hostname, path, {}, doc);
+  const res = await httpsPost(hostname, path, await firestoreHeaders(), doc);
 
   if (res.status !== 200) {
     throw new Error(`Firestore 저장 실패 (${res.status}): ${JSON.stringify(res.body)}`);
@@ -386,6 +391,12 @@ function sleep(ms) {
 // 9. 메인 실행
 // ─────────────────────────────────────────
 async function main() {
+  if (process.argv.includes('--verify-access')) {
+    if (!FIREBASE_PROJECT_ID?.trim()) throw new Error('FIREBASE_PROJECT_ID is required');
+    const reports = await getExistingReports();
+    console.log(`Authenticated Firestore read succeeded: ${reports.length} reports. No reports generated or changed.`);
+    return;
+  }
   // The browser key is intentionally public. Never use it for the billable Gemini API.
   const browserConfig = require('node:fs').readFileSync(require('node:path').join(__dirname, '../js/firebase-init.js'), 'utf8');
   const browserKey = browserConfig.match(/apiKey\s*:\s*['"]([^'"]+)['"]/)?.[1];

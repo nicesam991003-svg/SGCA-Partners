@@ -220,13 +220,12 @@
                 let allPublished = [];
 
                 async function checkAdminPassword() {
-                    const pwd = await window.requestAdminPassword();
-                    if (pwd !== null && await window.matchesAdminPassword(pwd, "04331dcbd20ad79d6dce668cf3d0035f750e65132cd3fc457cc8b530f33e4aaa")) {
+                    try {
+                        await window.requireAdminAccess({ interactive: true });
                         isAdminMode = true;
-                        loadAdminSections();
-                    } else if (pwd !== null) {
-                        alert("Incorrect password.");
-                    }
+                        if (window.fetchInsightsAndRender) await window.fetchInsightsAndRender();
+                        await loadAdminSections();
+                    } catch (error) { alert(error.message); }
                 }
 
                 function getCategoryLabel(cat) {
@@ -254,7 +253,7 @@
                     document.getElementById('published-manage-section').style.display = 'block';
 
                     try {
-                        const snap = await window.loadInsightSnapshot();
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
                         allDrafts = [];
                         allPublished = [];
                         snap.forEach(doc => {
@@ -355,7 +354,7 @@
                         alert("发布成功！报告已在行业洞察页面显示。");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await window.loadInsightSnapshot();
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -376,7 +375,7 @@
                         alert("删除成功。");
                         await loadAdminSections();
                         allInsights = [];
-                        const snap = await window.loadInsightSnapshot();
+                        const snap = await window.loadInsightSnapshot({ includeDrafts: isAdminMode });
                         snap.forEach(doc => {
                             const d = { id: doc.id, ...doc.data() };
                             if (d.status !== 'draft') allInsights.push(d);
@@ -514,9 +513,10 @@
     <script src="js/main.js?v=1.1"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
-    <script defer src="js/firebase-init.js?v=1.4"></script>
-    <script defer src="js/insight-data.js?v=1.0"></script>
-    <script defer src="js/admin-access.js?v=1.0"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>
+    <script defer src="js/firebase-init.js?v=1.5"></script>
+    <script defer src="js/insight-data.js?v=2.0"></script>
+    <script defer src="js/admin-auth.js?v=2.0"></script>
     <script>
         let allInsights = [];
         let currentCategory = 'all';
@@ -669,7 +669,7 @@
             const container = document.getElementById('rss-feed-container');
             container.innerHTML = '<div class="loading-text">正在加载最新报告...</div>';
 
-            window.loadInsightSnapshot().then((querySnapshot) => {
+            window.loadInsightSnapshot({ includeDrafts: isAdminMode }).then((querySnapshot) => {
                 allInsights = [];
                 querySnapshot.forEach((doc) => {
                     const d = { id: doc.id, ...doc.data() };

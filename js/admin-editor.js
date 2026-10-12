@@ -30,6 +30,15 @@
             if (root.quillEn) root.quillEn.enable(!value);
         };
         busy(true);
+        document.getElementById('start-new-report').disabled = true;
+        try {
+            if (!await root.requireAdminAccess()) {
+                status.textContent = '회사 Google 계정으로 관리자 로그인한 뒤 리포트를 편집할 수 있습니다.';
+                list.textContent = '관리자 로그인이 필요합니다.';
+                return;
+            }
+        } catch (error) { status.textContent = error.message; return; }
+        document.getElementById('start-new-report').disabled = false;
         if (typeof Quill !== 'function') {
             status.textContent = '편집기를 불러오지 못했습니다. 새로고침해 주세요.';
             return;
@@ -86,7 +95,7 @@
         }
         async function refreshList() {
             try {
-                const snapshot = await root.loadInsightSnapshot();
+                const snapshot = await root.loadInsightSnapshot({ includeDrafts: true });
                 list.replaceChildren();
                 snapshot.forEach(doc => {
                     const report = doc.data();

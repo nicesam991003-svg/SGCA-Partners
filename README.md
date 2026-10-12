@@ -14,7 +14,7 @@ SGCA Partners의 공식 디지털 플랫폼입니다. 글로벌 규제 준수 �
 ## 🛠 기술 스택
 
 - **Frontend**: HTML5, CSS3, JavaScript (Vanilla JS)
-- **Backend/Database**: Firebase Firestore (로컬 file:// 환경 완벽 지원)
+- **Backend/Database**: Firebase Firestore 및 Google 관리자 인증
 - **Styling**: 모던하고 전문적인 디자인 시스템, 반응형 웹 디자인
 - **Icons**: 고해상도 맞춤형 아이콘 및 그래픽 에셋
 
@@ -35,9 +35,9 @@ SGCA Partners의 공식 디지털 플랫폼입니다. 글로벌 규제 준수 �
 
 1. 저장소를 클론합니다.
    ```bash
-   git clone https://github.com/nicesam991003/SGCA-Partners.git
+   git clone https://github.com/nicesam991003-svg/SGCA-Partners.git
    ```
-2. `index.html` 파일을 브라우저에서 엽니다. (로컬 환경에서 즉시 확인 가능)
+2. HTTP 서버로 사이트를 열어 확인합니다. 관리자 Google 로그인은 Firebase에 등록된 HTTPS 도메인에서 사용합니다.
 
 ## 📝 관리자 설정
 
@@ -50,9 +50,13 @@ SGCA Partners의 공식 디지털 플랫폼입니다. 글로벌 규제 준수 �
 - 자동 생성기는 검색 결과의 grounding 출처를 실제로 열어 최종 발행기관 URL, 제목, 본문 증거, 발행일을 확인합니다. AI가 작성한 URL은 저장하지 않습니다. 출처를 읽지 못하거나 최근 뉴스가 없으면 신규 리포트를 저장하지 않습니다.
 - 원문 사실관계와 한영 번역을 별도 검토한 뒤 검증 정보를 함께 저장합니다. 확인되지 않은 법적 의무, 시행일, 표준 변경 또는 원문에 없는 자료를 추가하지 않습니다. 해석·권고는 원문 요약과 구분합니다.
 - 자동 생성 결과는 초안입니다. 내용이나 원문 링크를 수정하면 기존 출처 승인을 무효화하고, 관리자 확인 전에는 초안으로 저장합니다. 게시 버튼도 원문 검증 정보를 확인합니다.
-- 관리자 비밀번호는 `type=password` 대화상자에서 입력합니다. 입력을 마치거나 취소하면 값을 지웁니다. 이는 기존 프런트엔드 관리자 진입 방식의 입력 표시 개선이며, 서버 인증을 새로 도입한 변경은 아닙니다.
+- 관리자는 Google로 인증한 `sim@sgca-partners.com` 계정만 허용합니다. 공유 비밀번호 입력을 없애고 Firestore 서버 규칙에서 초안 조회와 쓰기 권한을 검사합니다. 공개 방문자는 게시된 리포트만 조회합니다.
+- 자동 생성기는 GitHub OIDC와 전용 서비스 계정으로 인증합니다. 서비스 계정은 리포트 조회와 신규 문서 생성만 허용되며, 기존 문서 수정·삭제 권한이 없습니다. `scripts/setup-generator-identity.sh`의 저장소 ID, main 및 주간 워크플로 조건을 유지해야 합니다.
+- 배포 순서: 회사 프로젝트의 Google 로그인과 허용 도메인 설정 → 자동 생성 전용 IAM 설정 → 홈페이지 배포 → `firebase deploy --only firestore:rules --project sgca-platform-7abbc` → 공개 조회 및 관리자 인증 확인. 실제 적용 여부는 배포 결과에서 별도로 확인합니다.
 
 검증: `npm test`. GitHub Actions도 생성 전에 같은 검사를 실행합니다. 원문 사이트가 자동 접근을 막는 경우 자동 생성은 실패하며, 출처를 추측해서 대체하지 않습니다.
+
+서버 규칙 검증: Java 21 이상에서 `npx firebase-tools emulators:exec --only firestore --project demo-sgca-security "npm run test:rules"`. 주간 워크플로의 수동 실행은 기본적으로 읽기 권한만 확인하며 리포트를 생성하지 않습니다.
 
 ---
 © 2026 SGCA Partners. All Rights Reserved.
