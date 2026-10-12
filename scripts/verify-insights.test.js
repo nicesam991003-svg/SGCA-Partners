@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot, verifiedPublishedCopy } = require('../js/insight-data');
+const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy } = require('../js/insight-data');
 const { publishedDocuments } = require('./build-site');
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
 const { saveToFirestore, validateApiConfiguration } = require('./generate-insight');
@@ -60,6 +60,21 @@ test('server document decoding retains missing-date reports, sorts dates and pre
   assert.equal(snapshot.docs[0].data().status, 'draft');
   assert.equal(snapshot.docs[1].data().date, '2026-09-01');
   assert.equal(snapshot.docs[1].data().sourceVerification.status, 'verified');
+});
+
+test('individual report reads retry transient failures but never replace denied or deleted reports', async () => {
+  const original=global.fetch;
+  global.firebaseConfig={projectId:'demo-sgca'};
+  let calls=0;
+  global.fetch=async()=>{if(++calls===1)throw new TypeError('Failed to fetch');return new Response(JSON.stringify({name:'projects/demo-sgca/databases/(default)/documents/insights/existing',fields:{status:{stringValue:'draft'}},updateTime:'2026-10-12T00:00:00Z'}));};
+  try {
+    const report=await loadInsightDocument('existing');
+    assert.equal(calls,2);assert.equal(report.status,'draft');assert.equal(report.id,'existing');
+    for(const status of [403,404]) {
+      calls=0;global.fetch=async()=>{calls++;return new Response('{}',{status});};
+      await assert.rejects(loadInsightDocument('existing'));assert.equal(calls,1);
+    }
+  }finally{global.fetch=original;}
 });
 
 function publicCopy(project = 'sgca-platform-7abbc') {

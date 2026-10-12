@@ -144,20 +144,30 @@
                 publishedDate: document.getElementById('source-date').value
             });
             busy(true);
+            let saved = false;
             try {
                 if (editing) {
                     // An existing report always updates its own ID; no implicit create fallback.
                     const current = await root.loadInsightDocument(editing.id);
                     if (current.updateTime !== editing.updateTime) throw new Error('다른 변경이 감지되었습니다. 리포트를 다시 불러온 뒤 수정해 주세요.');
                     await root.db.collection('insights').doc(editing.id).update(payload);
+                    saved = true;
                     await editReport(editing.id);
                 } else {
                     const created = await root.db.collection('insights').add({ ...payload, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                    saved = true;
                     await editReport(created.id);
+                }
+                if (!editing) {
+                    status.textContent = '서버에 저장되었습니다. 저장된 내용을 다시 불러오지 못했으므로 새로고침해 주세요.';
+                    return;
                 }
                 await refreshList();
                 alert(payload.status === 'published' ? '리포트가 저장 및 게시되었습니다.' : '초안으로 저장했습니다. 원문과 번역을 확인한 뒤 게시해 주세요.');
-            } catch (error) { status.textContent = error.message || '저장하지 못했습니다. 다시 시도해 주세요.'; busy(false); }
+            } catch (error) {
+                status.textContent = saved ? '서버에 저장되었습니다. 저장된 내용을 다시 불러오지 못했으므로 새로고침해 주세요.' : (error.message || '저장하지 못했습니다. 다시 시도해 주세요.');
+                if (!saved) busy(false);
+            }
         });
         const editId = new URLSearchParams(location.search).get('edit');
         if (editId) await editReport(editId); else startNew();

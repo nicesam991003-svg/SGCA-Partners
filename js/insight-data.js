@@ -90,12 +90,24 @@
         if (!id || id.includes('/')) throw new Error('Invalid report ID');
         const endpoint = `https://firestore.googleapis.com/v1/projects/${encodeURIComponent(firebaseConfig.projectId)}/databases/(default)/documents/insights/${encodeURIComponent(id)}`;
         const authorization = root.getInsightAuthHeaders ? await root.getInsightAuthHeaders() : {};
-        const response = await fetch(endpoint, { cache: 'no-store', headers: authorization, signal: AbortSignal.timeout(15000) });
-        if (response.status === 404) throw new Error('해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.');
-        if (!response.ok) throw new Error(`리포트 조회 실패 (HTTP ${response.status})`);
-        const doc = await response.json();
-        if (!doc.name || !doc.fields) throw new Error('리포트 응답이 올바르지 않습니다.');
-        return { ...decodeFields(doc.fields), id: doc.name.split('/').pop(), updateTime: doc.updateTime };
+        let lastError;
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const response = await fetch(endpoint, { cache: 'no-store', headers: authorization, signal: AbortSignal.timeout(15000) });
+                if (!response.ok) {
+                    const error = new Error(response.status === 404 ? '해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.' : `리포트 조회 실패 (HTTP ${response.status})`);
+                    error.permanent = response.status < 500;
+                    throw error;
+                }
+                const doc = await response.json();
+                if (!doc.name || !doc.fields) throw new SyntaxError('리포트 응답이 올바르지 않습니다.');
+                return { ...decodeFields(doc.fields), id: doc.name.split('/').pop(), updateTime: doc.updateTime };
+            } catch (error) {
+                if (error.permanent || error instanceof SyntaxError) throw error;
+                lastError = error;
+            }
+        }
+        throw lastError;
     }
     function getInsightSourceLink(item) {
         if (!item.sourceVerification || !['verified', 'manual_reviewed'].includes(item.sourceVerification.status) || item.link !== item.sourceVerification.url) return '';
@@ -163,5 +175,5 @@
     root.showInsightSourceNotice = showInsightSourceNotice;
     root.requireVerifiedInsight = requireVerifiedInsight;
     root.showInsightLoadError = showInsightLoadError;
-    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, getInsightSourceLink, loadInsightSnapshot, verifiedPublishedCopy };
+    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy };
 })(typeof window !== 'undefined' ? window : globalThis);
