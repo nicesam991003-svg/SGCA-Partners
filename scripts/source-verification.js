@@ -1,4 +1,5 @@
 const { createHash } = require('node:crypto');
+const { setTimeout: delay } = require('node:timers/promises');
 
 const SOURCE_DOMAINS = {
   'management-system': ['iso.org', 'iec.ch', 'global-aci.org', 'kab.or.kr', 'anab.ansi.org', 'iasonline.org', 'ukas.com'],
@@ -27,8 +28,11 @@ function publicationDates(html) {
   const add = value => {
     // A publisher's local calendar date must not move a day when normalized to UTC.
     const calendarDate = value.trim();
-    const parsed = Date.parse(calendarDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || calendarDate + ' UTC');
-    if (!Number.isNaN(parsed)) dates.add(new Date(parsed).toISOString().slice(0, 10));
+    const isoDate = calendarDate.match(/^\d{4}-\d{2}-\d{2}(?=T|\s|$)/)?.[0];
+    const parsed = Date.parse(isoDate || calendarDate + ' UTC');
+    if (Number.isNaN(parsed)) return;
+    const date = new Date(parsed).toISOString().slice(0, 10);
+    if (!isoDate || isoDate === date) dates.add(date);
   };
   const datePattern = '(\\d{4}-\\d{2}-\\d{2}|[A-Za-z]+ \\d{1,2},? \\d{4}|\\d{1,2} [A-Za-z]+ \\d{4})';
   // The Commission prints its explicit publication date in the page header,
@@ -42,6 +46,14 @@ function publicationDates(html) {
     const visible = textFromHtml(match[1]).match(new RegExp('^' + datePattern + '$'));
     if (visible) add(visible[1]);
   }
+  // ISO committee articles mark the article's byline date with the pubdate attribute.
+  for (const [, header] of html.matchAll(/<header\b[^>]*class=["'][^"']*\bentry-header\b[^"']*["'][^>]*>([\s\S]*?)<\/header>/gi)) {
+    for (const [tag] of header.matchAll(/<time\b[^>]*>/gi)) {
+      if (!/\spubdate(?=\s|=|>)/i.test(tag)) continue;
+      const date = tag.match(/\sdatetime\s*=\s*["']([^"']+)["']/i);
+      if (date) add(date[1]);
+    }
+  }
   if (dates.size) return [...dates];
   // Only explicit datePublished/published_time metadata and labelled publication dates.
   for (const match of html.matchAll(/"datePublished"\s*:\s*"([^"]+)"/gi)) add(match[1]);
@@ -50,17 +62,34 @@ function publicationDates(html) {
       const value = tag[0].match(/content\s*=\s*['"]([^'"]+)['"]/i); if (value) add(value[1]);
     }
   }
+  if (dates.size) return [...dates];
   const text = textFromHtml(html);
   for (const match of text.matchAll(new RegExp('(?:Date Published|Publish Date|Publication date|Publication|Published on|Released|Press Release|News Item)\\s*[:|]?\\s*' + datePattern, 'gi'))) add(match[1]);
   return [...dates];
 }
+async function requestPublisher(url, fetchImpl, accept, redirect) {
+  const request = () => fetchImpl(url, {
+    redirect, signal: AbortSignal.timeout(20000),
+    headers: { Accept: accept, 'User-Agent': 'SGCA-SourceVerifier/1.0' }
+  });
+  const response = await request();
+  if (response.status !== 429 && response.status !== 503) return response;
+  const retryAfter = response.headers.get('retry-after');
+  const milliseconds = retryAfter == null ? 1500 : /^\d+$/.test(retryAfter) ?
+    Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now();
+  if (!Number.isFinite(milliseconds) || milliseconds > 8000) return response;
+  await response.body?.cancel();
+  await delay(Math.max(500, milliseconds));
+  return request();
+}
+
 async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGroundingRedirect = false) {
   let url = value;
   // Grounding redirects are allowed only as the initial hop; never persisted as a source.
   for (let hop = 0; hop < 6; hop++) {
     const intermediary = allowGroundingRedirect && hop === 0 && new URL(url).hostname === 'vertexaisearch.cloud.google.com' && new URL(url).pathname.startsWith('/grounding-api-redirect/');
     url = intermediary ? cleanUrl(url) : allowedUrl(url, domains);
-    const response = await fetchImpl(url, { redirect: 'manual', signal: AbortSignal.timeout(20000), headers: { Accept: 'text/html', 'User-Agent': 'SGCA-SourceVerifier/1.0' } });
+    const response = await requestPublisher(url, fetchImpl, 'text/html', 'manual');
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location');
       if (!location) throw new Error('Source redirect lacks a destination');
@@ -79,11 +108,72 @@ async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGround
   }
   throw new Error('Too many source redirects');
 }
-async function fetchSource(value, domains, fetchImpl = fetch) {
+function commissionPdfLink(url, main) {
+  const page = new URL(url);
+  if (page.hostname !== 'health.ec.europa.eu' || !/^\/latest-updates\/[^/]+_en$/.test(page.pathname)) return null;
+  const links = new Set();
+  for (const [tag] of main.matchAll(/<a\b[^>]*>/gi)) {
+    if (!/\becl-file__download\b/.test(tag)) continue;
+    const href = tag.match(/\shref\s*=\s*["']([^"']+)["']/i);
+    const target = href?.[1].replace(/&amp;/g, '&');
+    if (!target || !URL.canParse(target, url)) continue;
+    const link = new URL(target, url);
+    if (link.origin === page.origin && !link.username && !link.password &&
+        /^\/document\/download\/[a-f0-9-]+_en$/.test(link.pathname) &&
+        /\.pdf$/i.test(link.searchParams.get('filename') || '')) links.add(link.href);
+  }
+  return links.size === 1 ? [...links][0] : null;
+}
+
+async function readCommissionPdf(url, fetchImpl) {
+  const maxBytes = 5 * 1024 * 1024;
+  const response = await requestPublisher(url, fetchImpl, 'application/pdf', 'error');
+  if (!response.ok) throw new Error(`Official attachment HTTP ${response.status}`);
+  if (!/^application\/pdf(?:;|$)/i.test(response.headers.get('content-type') || '') || !response.body) {
+    throw new Error('Official attachment is not a PDF');
+  }
+  let size = 0;
+  const chunks = [];
+  for await (const chunk of response.body) {
+    size += chunk.length;
+    if (size > maxBytes) throw new Error('Official attachment is too large');
+    chunks.push(chunk);
+  }
+  const data = Buffer.concat(chunks);
+  if (data.subarray(0, 5).toString('ascii') !== '%PDF-') throw new Error('Invalid official PDF attachment');
+
+  const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const task = getDocument({
+    data: new Uint8Array(data), isEvalSupported: false, useSystemFonts: false,
+    useWorkerFetch: false, stopAtErrors: true, verbosity: 0
+  });
+  try {
+    const document = await task.promise;
+    const pages = [];
+    for (let number = 1; number <= Math.min(document.numPages, 40); number++) {
+      const page = await document.getPage(number);
+      const content = await page.getTextContent();
+      pages.push(content.items.map(item => item.str || '').join(' '));
+      page.cleanup();
+    }
+    const text = pages.join(' ').replace(/\s+/g, ' ').trim();
+    if (text.length < 200) throw new Error('Official attachment has no verifiable text');
+    return text;
+  } finally {
+    await task.destroy();
+  }
+}
+
+async function fetchSource(value, domains, fetchImpl = fetch, shouldRead = () => true) {
   const {url,title,html} = await fetchPublisherHtml(value, domains, fetchImpl, true);
-  const text = textFromHtml((html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i) || [])[1] || html);
+  const dates = publicationDates(html);
+  if (!shouldRead({url, dates})) return null;
+  const main = html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i)?.[1] || html;
+  let text = textFromHtml(main);
+  const attachmentUrl = dates.length && text.length < 200 ? commissionPdfLink(url, main) : null;
+  if (attachmentUrl) text = await readCommissionPdf(attachmentUrl, fetchImpl);
   if (!title || text.length < 200) throw new Error('Source content is missing');
-  return { url, title, text, dates: publicationDates(html), sha256: createHash('sha256').update(text).digest('hex') };
+  return { url, title, text, dates, attachmentUrl, sha256: createHash('sha256').update(text).digest('hex') };
 }
 function verifyEvidence(report, source, today, maxAgeDays) {
   if (report.sourceTitle !== source.title) throw new Error('Source title does not match the retrieved page');
@@ -92,7 +182,7 @@ function verifyEvidence(report, source, today, maxAgeDays) {
   if (!source.dates.includes(report.sourcePublishedDate)) throw new Error('Publication date could not be independently verified');
   const age = (Date.parse(today) - Date.parse(report.sourcePublishedDate)) / 86400000;
   if (!Number.isFinite(age) || age < 0 || age > maxAgeDays) throw new Error('Source publication is outside the requested time window');
-  return { status: 'verified', url: source.url, title: source.title, publishedDate: report.sourcePublishedDate, quote, contentSha256: source.sha256, checkedAt: new Date().toISOString(), method: 'grounded-source-fetch-and-content-review' };
+  return { status: 'verified', url: source.url, title: source.title, publishedDate: report.sourcePublishedDate, quote, contentSha256: source.sha256, checkedAt: new Date().toISOString(), method: 'grounded-source-fetch-and-content-review', ...(source.attachmentUrl ? { attachmentUrl: source.attachmentUrl } : {}) };
 }
 function firestoreValue(value) {
   if (typeof value === 'string') return { stringValue: value };

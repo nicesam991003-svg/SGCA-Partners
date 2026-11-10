@@ -279,6 +279,69 @@ test('failed search and unavailable official indexes are reported as failure, no
     search:async()=>{throw Error('Gemini API Error (503)');},fetchImpl:async()=>new Response('',{status:503}),log:{warn(){}}}),/Discovery incomplete/);
 });
 
+test('ISO committee publication date comes from the article byline, including news.html detail links', async () => {
+  const list = 'https://committee.iso.org/sites/tc176/home/news.html';
+  const article = new URL('news/content-left-area/news-and-updates/news.html', list).href;
+  const response = body => new Response(body, { headers: { 'content-type': 'text/html' } });
+  const html = '<title>ISO committee update</title><header class="entry-header">' +
+    "<time class='updated' datetime='2026-11-03' pubdate>3 November 2026</time></header>" +
+    '<main>' + 'The standard was released 23 October 2026. '.repeat(7) + '</main>';
+  const result = await discoverSources({
+    category: 'management-system', today: '2026-11-10', log: {warn(){}},
+    search: async () => { throw Error('Search temporarily unavailable'); },
+    fetchImpl: async url => response(url === list ? `<a href="${article}">Article</a>` : html)
+  });
+  assert.deepEqual(result.sources.map(({url,date}) => ({url,date})), [{url:article,date:'2026-11-03'}]);
+  assert.deepEqual(publicationDates('<header class="entry-header"><time datetime="2026-11-08">Event date</time></header>'), []);
+  assert.deepEqual(publicationDates('<header class="entry-header"><time pubdate datetime="2026-02-30">Invalid</time></header>'), []);
+});
+
+test('product discovery follows the official announcement and reads its same-publisher PDF after search skips', async () => {
+  const base = 'https://health.ec.europa.eu';
+  const list = base + '/medical-devices-sector_en';
+  const article = base + '/latest-updates/mdcg-fixture-2026-11-03_en';
+  const attachment = base + '/document/download/aabbcc-1234_en?filename=mdcg_fixture_en.pdf';
+  const sentence = 'Official evidence supports the stated scope of this diagnostic guidance.';
+  const stream = 'BT /F1 10 Tf 10 100 Td (' + (sentence + ' ').repeat(4) + ') Tj ET';
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2000 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Length ' + stream.length + ' >>\nstream\n' + stream + '\nendstream'
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = objects.map((value, index) => {
+    const offset = pdf.length;
+    pdf += `${index + 1} 0 obj\n${value}\nendobj\n`;
+    return String(offset).padStart(10, '0') + ' 00000 n \n';
+  });
+  const xref = pdf.length;
+  pdf += 'xref\n0 6\n0000000000 65535 f \n' + offsets.join('') +
+    `trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  const calls = [];
+  const result = await discoverSources({
+    category: 'product-certification', today: '2026-11-10', log: {},
+    search: async () => ({report:{skip:true}}),
+    fetchImpl: async (url, options) => {
+      calls.push(url);
+      if (url === attachment) {
+        assert.equal(options.redirect, 'error');
+        return new Response(pdf, {headers:{'content-type':'application/pdf'}});
+      }
+      const html = url === list ? `<a href="${article}">Notice</a>` :
+        `<title>Official notice</title><meta property="article:published_time" content="2026-11-03"><main><a class="ecl-file__download" href="${attachment}">Download</a><a class="ecl-file__download" href="https://example.com/document/download/abc_en?filename=spoof.pdf">Ignore</a></main>`;
+      return new Response(html, {headers:{'content-type':'text/html'}});
+    }
+  });
+  assert.deepEqual(calls,[list,article,attachment]);
+  const source = result.sources[0];
+  assert.equal(source.date,'2026-11-03');
+  assert.equal(source.url,article);
+  assert.ok(source.text.includes(sentence));
+  assert.equal(verifyEvidence({sourceTitle:source.title,sourceQuote:sentence,sourcePublishedDate:source.date},source,'2026-11-10',14).attachmentUrl,attachment);
+});
+
 test('a rejected article falls back to a different verified original without bypassing translation review', async () => {
   const source={url:'https://csrc.nist.gov/News/2026/verified',title:'Verified title',date:'2026-11-04',dates:['2026-11-04'],text:'Verified publisher statement with a long exact quotation for checking.',sha256:'fixture'};
   const rejected={...source,url:'https://csrc.nist.gov/News/2026/unrelated'};

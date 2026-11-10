@@ -9,7 +9,11 @@ function officialIndexes(category, today) {
   ];
   if (category === 'management-system') return [{
     url: 'https://committee.iso.org/sites/tc176/home/news.html',
-    path: /^\/sites\/tc176\/home\/news\/content-left-area\/news-and-updates\/(?!news\.html$)[^/]+\.html$/i
+    path: /^\/sites\/tc176\/home\/news\/content-left-area\/news-and-updates\/[^/]+\.html$/i
+  }];
+  if (category === 'product-certification') return [{
+    url: 'https://health.ec.europa.eu/medical-devices-sector_en',
+    path: /^\/latest-updates\/[^/]+_en$/i
   }];
   return [];
 }
@@ -49,22 +53,36 @@ async function discoverSources({category, today, existingLinks = [], search, onl
   const fetched = new Set();
   let unverifiable = 0;
   const verify = async (urls, limit, allowGrounding) => {
-    const unique = [...new Set(urls)].filter(url => !fetched.has(url)).slice(0, limit);
+    const unique = [...new Set(urls)].filter(url => {
+      if (fetched.has(url)) return false;
+      try { return !known.has(cleanUrl(url)); } catch { return true; }
+    }).slice(0, limit);
     for (const url of unique) fetched.add(url);
-    const resolved = await Promise.all(unique.map(async url => {
+    const inspect = async url => {
       try {
         if (!allowGrounding) allowedUrl(url, domains);
-        const source = await fetchSource(url, domains, fetchImpl);
-        if (known.has(source.url)) return null;
-        if (!source.dates.length) throw new Error('No explicit publication date');
-        const date = freshDate(source, today, maxDays);
-        return date ? {...source, date} : null;
+        let date;
+        const source = await fetchSource(url, domains, fetchImpl, publication => {
+          if (known.has(publication.url)) return false;
+          if (!publication.dates.length) throw new Error('No explicit publication date');
+          log.info?.('  기관 원문 발행일 확인: ' + publication.dates.join(', ') + ' — ' + publication.url);
+          date = freshDate(publication, today, maxDays);
+          return Boolean(date);
+        });
+        return source && {...source, date};
       } catch (error) {
         unverifiable++;
         log.warn('  원문 후보 검증 실패: ' + error.message);
         return null;
       }
-    }));
+    };
+    const resolved = [];
+    if (category === 'product-certification' && !allowGrounding) {
+      // The Commission list and its attachments share a host. Avoid bursts to that publisher.
+      for (const url of unique) resolved.push(await inspect(url));
+    } else {
+      resolved.push(...await Promise.all(unique.map(inspect)));
+    }
     const candidates = new Map();
     for (const source of resolved.filter(Boolean)) if (!candidates.has(source.url)) candidates.set(source.url, source);
     return [...candidates.values()];
@@ -82,6 +100,8 @@ async function discoverSources({category, today, existingLinks = [], search, onl
     log.warn('  검색 확인 실패: ' + error.message);
   }
   const indexes = officialIndexes(category, today);
+  // A verified publisher list can still provide a scoped result if grounding failed.
+  if (indexes.length) unverifiable = 0;
   let indexCount = 0;
   const lists = await Promise.all(indexes.map(async index => {
     try {
