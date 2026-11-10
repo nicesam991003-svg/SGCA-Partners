@@ -133,7 +133,7 @@ async function callGeminiWithRetry(systemPrompt, userPrompt, useSearch = true) {
     return await callGemini(systemPrompt, userPrompt, useSearch);
   } catch (error) {
     if (![429,500,502,503,504].includes(error.status)) throw error;
-    const model = !useSearch && error.status !== 429 ? GEMINI_TEXT_FALLBACK : GEMINI_PRIMARY_MODEL;
+    const model = useSearch ? GEMINI_PRIMARY_MODEL : GEMINI_TEXT_FALLBACK;
     console.warn(`  Gemini 일시적 오류, ${model}로 재시도: ${error.message}`);
     await sleep(5000);
     return callGemini(systemPrompt, userPrompt, useSearch, model);
