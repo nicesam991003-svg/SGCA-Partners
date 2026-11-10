@@ -89,10 +89,13 @@ function getTodayKST() {
 // ─────────────────────────────────────────
 // 4. Gemini API 호출 함수
 // ─────────────────────────────────────────
-async function callGemini(systemPrompt, userPrompt, useSearch = true) {
+const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
+const GEMINI_TEXT_FALLBACK = 'gemini-3.1-flash-lite';
+
+async function callGemini(systemPrompt, userPrompt, useSearch = true, model = GEMINI_PRIMARY_MODEL) {
   const res = await httpsPost(
     'generativelanguage.googleapis.com',
-    `/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+    `/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`,
     {},
     {
       system_instruction: { parts: [{ text: systemPrompt }] },
@@ -125,14 +128,15 @@ async function callGemini(systemPrompt, userPrompt, useSearch = true) {
   }
 }
 
-async function callGeminiWithRetry(...args) {
-  for (let attempt=0; ; attempt++) {
-    try { return await callGemini(...args); }
-    catch (error) {
-      if (attempt >= 1 || ![429,500,502,503,504].includes(error.status)) throw error;
-      console.warn('  Gemini 일시적 오류, 재시도: ' + error.message);
-      await sleep(5000);
-    }
+async function callGeminiWithRetry(systemPrompt, userPrompt, useSearch = true) {
+  try {
+    return await callGemini(systemPrompt, userPrompt, useSearch);
+  } catch (error) {
+    if (![429,500,502,503,504].includes(error.status)) throw error;
+    const model = !useSearch && error.status !== 429 ? GEMINI_TEXT_FALLBACK : GEMINI_PRIMARY_MODEL;
+    console.warn(`  Gemini 일시적 오류, ${model}로 재시도: ${error.message}`);
+    await sleep(5000);
+    return callGemini(systemPrompt, userPrompt, useSearch, model);
   }
 }
 
