@@ -75,7 +75,7 @@ async function requestPublisher(url, fetchImpl, accept, redirect) {
   const response = await request();
   if (response.status !== 429 && response.status !== 503) return response;
   const retryAfter = response.headers.get('retry-after');
-  const milliseconds = retryAfter == null ? 1500 : /^\d+$/.test(retryAfter) ?
+  const milliseconds = retryAfter == null ? 1500 : /^\d+(?:\.\d+)?$/.test(retryAfter) ?
     Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now();
   if (!Number.isFinite(milliseconds) || milliseconds > 8000) return response;
   await response.body?.cancel();
@@ -89,7 +89,8 @@ async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGround
   for (let hop = 0; hop < 6; hop++) {
     const intermediary = allowGroundingRedirect && hop === 0 && new URL(url).hostname === 'vertexaisearch.cloud.google.com' && new URL(url).pathname.startsWith('/grounding-api-redirect/');
     url = intermediary ? cleanUrl(url) : allowedUrl(url, domains);
-    const response = await requestPublisher(url, fetchImpl, 'text/html', 'manual');
+    // Accept both document formats used by publishers; validate the returned type below.
+    const response = await requestPublisher(url, fetchImpl, 'text/html,application/xhtml+xml;q=0.9,*/*;q=0.1', 'manual');
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location');
       if (!location) throw new Error('Source redirect lacks a destination');
@@ -99,7 +100,7 @@ async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGround
     if (!response.ok) throw new Error(`Source HTTP ${response.status}`);
     if (intermediary) throw new Error('Grounding redirect did not resolve to a publisher');
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('text/html')) throw new Error('Source requires an inspectable HTML publication page');
+    if (!/^(?:text\/html|application\/xhtml\+xml)(?:;|$)/i.test(contentType)) throw new Error('Source requires an inspectable HTML publication page');
     const html = await response.text();
     if (html.length > 3000000) throw new Error('Source page is too large');
     const title = textFromHtml((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '');
