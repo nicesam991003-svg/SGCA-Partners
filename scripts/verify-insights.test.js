@@ -357,8 +357,11 @@ test('a rejected article falls back to a different verified original without byp
       assert.equal(useSearch,false);
       requests++;
       if (requests===1) return {report:{skip:true}};
-      if (requests===2) return {report:{title:'한글',titleEn:'English',desc:'요약',descEn:'Summary',fullContent:'<p>본문</p>',fullContentEn:'<p>Body</p>',sourceTitle:source.title,sourcePublishedDate:source.date,sourceQuote:source.text,link:'https://example.org/fake'}};
-      assert.equal(JSON.parse(payload).report.link,source.url);
+      if (requests===2) return {report:{title:'한글',titleEn:'English',desc:'요약',descEn:'Summary',fullContent:'<p>본문</p>',fullContentEn:'<p>Body</p>',sourceTitle:'Model paraphrase',sourcePublishedDate:'2026-11-01',sourceQuote:source.text,link:'https://example.org/fake'}};
+      const reviewedReport = JSON.parse(payload).report;
+      assert.equal(reviewedReport.link,source.url);
+      assert.equal(reviewedReport.sourceTitle,source.title);
+      assert.equal(reviewedReport.sourcePublishedDate,source.date);
       return {report:{supported:true,translationAccurate:true,issues:[]}};
     }
   });
