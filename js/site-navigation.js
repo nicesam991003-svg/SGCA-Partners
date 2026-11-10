@@ -87,9 +87,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const modal = document.getElementById('insightModal');
   if (modal && window.openInsightModal) {
     const originalOpen = window.openInsightModal, originalClose = window.closeInsightModal;
-    let previousFocus, previousUrl;
-    const oldDisplay = modal.style.display;
+    let previousFocus, previousUrl, openReportId;
     function isOpen() { return getComputedStyle(modal).display !== 'none'; }
+    function reportFromUrl() { return new URL(location.href).searchParams.get('report'); }
     function formatDate(value) {
       if (!value) return words[9];
       const date = new Date(value);
@@ -102,25 +102,31 @@ document.addEventListener('DOMContentLoaded', () => {
       values.forEach((value, i) => { const line = document.createElement('p'); line.textContent = `${words[6+i]}: ${formatDate(value)}`; box.append(line); });
     }
     window.openInsightModal = function(id, {fromUrl = false} = {}) {
-      const link = document.querySelector(`[data-report-id="${CSS.escape(encodeURIComponent(id))}"]`);
       const item = window.latestPublicSnapshot?.docs.find(doc=>doc.id===id)?.data();
       previousFocus = document.activeElement;
       previousUrl = location.href;
       originalOpen(id);
       if (!isOpen()) return;
+      openReportId = id;
       if (item) showProvenance(item);
-      else window.loadInsightDocument(id).then(showProvenance).catch(() => {});
+      else window.loadInsightDocument(id).then(data => {
+        if (openReportId === id) showProvenance(data);
+      }).catch(() => {});
       if (!fromUrl) { const url = new URL(location.href); url.searchParams.set('report', id); history.pushState({sgcaReport:true}, '', url); }
       document.body.classList.add('report-open');
       document.querySelectorAll('body > *').forEach(element => { if (element !== modal && !element.contains(modal)) element.inert = true; });
       modal.querySelector('.insight-modal-close').focus();
     };
-    window.closeInsightModal = function() {
+    function hideInsightModal() {
       originalClose(); document.body.classList.remove('report-open');
       document.querySelectorAll('body > *').forEach(element => { element.inert = false; });
+      openReportId = null;
+      previousFocus?.focus();
+    }
+    window.closeInsightModal = function() {
+      hideInsightModal();
       if (previousUrl && !new URL(previousUrl).searchParams.has('report')) history.replaceState(null, '', previousUrl);
       else { const url = new URL(location.href); url.searchParams.delete('report'); history.replaceState(null, '', url); }
-      previousFocus?.focus();
     };
     document.addEventListener('click', event => {
       const link = event.target.closest('a[data-report-id]');
@@ -138,12 +144,17 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
       }
     });
-    window.addEventListener('popstate', () => { if (isOpen()) window.closeInsightModal(); });
-    const report = new URL(location.href).searchParams.get('report');
+    window.addEventListener('popstate', () => {
+      const report = reportFromUrl();
+      if (isOpen() && openReportId === report) return;
+      if (isOpen()) hideInsightModal();
+      if (report) window.openInsightModal(report, {fromUrl:true});
+    });
+    const report = reportFromUrl();
     if (report) {
       let done = false, expanded = false;
       const observer = new MutationObserver(() => {
-        if (done) return;
+        if (done || reportFromUrl() !== report) return;
         if (!document.querySelector(`[data-report-id="${CSS.escape(encodeURIComponent(report))}"]`)) {
           if (!expanded && document.querySelector('.rss-card') && typeof window.renderInsightCards === 'function') { expanded=true; window.renderInsightCards(1000); }
           return;
@@ -153,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
       observer.observe(document.body, {childList:true, subtree:true});
       // A link to a report beyond the initial six also loads through the verified public source.
       window.loadInsightSnapshot({preferStatic:true}).then(snapshot => {
-        const item = snapshot.docs.find(doc=>doc.id===report); if (!item || done) return;
+        const item = snapshot.docs.find(doc=>doc.id===report); if (!item || done || reportFromUrl() !== report) return;
         if (typeof window.renderInsightCards === 'function') window.renderInsightCards(snapshot.size);
         else {
           done = true; observer.disconnect();
