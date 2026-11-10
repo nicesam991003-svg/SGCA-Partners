@@ -25,9 +25,24 @@ function textFromHtml(html) {
 function publicationDates(html) {
   const dates = new Set();
   const add = value => {
-    const parsed = Date.parse(value);
+    // A publisher's local calendar date must not move a day when normalized to UTC.
+    const calendarDate = value.trim();
+    const parsed = Date.parse(calendarDate.match(/^\d{4}-\d{2}-\d{2}/)?.[0] || calendarDate + ' UTC');
     if (!Number.isNaN(parsed)) dates.add(new Date(parsed).toISOString().slice(0, 10));
   };
+  const datePattern = '(\\d{4}-\\d{2}-\\d{2}|[A-Za-z]+ \\d{1,2},? \\d{4}|\\d{1,2} [A-Za-z]+ \\d{4})';
+  // The Commission prints its explicit publication date in the page header,
+  // which is excluded from the article body and may differ from UTC metadata.
+  for (const match of html.matchAll(/<li\b[^>]*class=["'][^"']*\becl-page-header__meta-item\b[^"']*["'][^>]*>([\s\S]*?)<\/li>/gi)) {
+    const visible = textFromHtml(match[1]).match(new RegExp('^Publication\\s+' + datePattern + '$', 'i'));
+    if (visible) add(visible[1]);
+  }
+  // CSRC's news date is the public release date, not the CMS creation date.
+  for (const match of html.matchAll(/<small\b[^>]*id=["']news-date["'][^>]*>([\s\S]*?)<\/small>/gi)) {
+    const visible = textFromHtml(match[1]).match(new RegExp('^' + datePattern + '$'));
+    if (visible) add(visible[1]);
+  }
+  if (dates.size) return [...dates];
   // Only explicit datePublished/published_time metadata and labelled publication dates.
   for (const match of html.matchAll(/"datePublished"\s*:\s*"([^"]+)"/gi)) add(match[1]);
   for (const tag of html.matchAll(/<meta\b[^>]*>/gi)) {
@@ -36,15 +51,14 @@ function publicationDates(html) {
     }
   }
   const text = textFromHtml(html);
-  const datePattern = '(\\d{4}-\\d{2}-\\d{2}|[A-Za-z]+ \\d{1,2},? \\d{4}|\\d{1,2} [A-Za-z]+ \\d{4})';
   for (const match of text.matchAll(new RegExp('(?:Date Published|Publish Date|Publication date|Publication|Published on|Released|Press Release|News Item)\\s*[:|]?\\s*' + datePattern, 'gi'))) add(match[1]);
   return [...dates];
 }
-async function fetchSource(value, domains, fetchImpl = fetch) {
+async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGroundingRedirect = false) {
   let url = value;
   // Grounding redirects are allowed only as the initial hop; never persisted as a source.
   for (let hop = 0; hop < 6; hop++) {
-    const intermediary = hop === 0 && new URL(url).hostname === 'vertexaisearch.cloud.google.com' && new URL(url).pathname.startsWith('/grounding-api-redirect/');
+    const intermediary = allowGroundingRedirect && hop === 0 && new URL(url).hostname === 'vertexaisearch.cloud.google.com' && new URL(url).pathname.startsWith('/grounding-api-redirect/');
     url = intermediary ? cleanUrl(url) : allowedUrl(url, domains);
     const response = await fetchImpl(url, { redirect: 'manual', signal: AbortSignal.timeout(20000), headers: { Accept: 'text/html', 'User-Agent': 'SGCA-SourceVerifier/1.0' } });
     if ([301, 302, 303, 307, 308].includes(response.status)) {
@@ -61,11 +75,15 @@ async function fetchSource(value, domains, fetchImpl = fetch) {
     if (html.length > 3000000) throw new Error('Source page is too large');
     const title = textFromHtml((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i) || [])[1] || '');
     if (/page (?:not found|unavailable)|\b404\b|access denied|request access|just a moment|attention required/i.test(title + ' ' + url)) throw new Error('Source is an error or access challenge page');
-    const text = textFromHtml((html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i) || [])[1] || html);
-    if (!title || text.length < 200) throw new Error('Source content is missing');
-    return { url, title, text, dates: publicationDates(html), sha256: createHash('sha256').update(text).digest('hex') };
+    return { url, title, html };
   }
   throw new Error('Too many source redirects');
+}
+async function fetchSource(value, domains, fetchImpl = fetch) {
+  const {url,title,html} = await fetchPublisherHtml(value, domains, fetchImpl, true);
+  const text = textFromHtml((html.match(/<main\b[^>]*>([\s\S]*?)<\/main>/i) || [])[1] || html);
+  if (!title || text.length < 200) throw new Error('Source content is missing');
+  return { url, title, text, dates: publicationDates(html), sha256: createHash('sha256').update(text).digest('hex') };
 }
 function verifyEvidence(report, source, today, maxAgeDays) {
   if (report.sourceTitle !== source.title) throw new Error('Source title does not match the retrieved page');
@@ -81,4 +99,4 @@ function firestoreValue(value) {
   if (typeof value === 'boolean') return { booleanValue: value };
   return { mapValue: { fields: Object.fromEntries(Object.entries(value).map(([key, v]) => [key, firestoreValue(v)])) } };
 }
-module.exports = { SOURCE_DOMAINS, cleanUrl, allowedUrl, textFromHtml, publicationDates, fetchSource, verifyEvidence, firestoreValue };
+module.exports = { SOURCE_DOMAINS, cleanUrl, allowedUrl, textFromHtml, publicationDates, fetchPublisherHtml, fetchSource, verifyEvidence, firestoreValue };

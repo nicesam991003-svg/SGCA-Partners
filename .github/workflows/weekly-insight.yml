@@ -10,6 +10,19 @@ on:
         description: 'Verify authenticated Firestore read without generating reports'
         type: boolean
         default: true
+      category:
+        description: 'Category to generate when verify_only is off'
+        type: choice
+        default: all
+        options:
+          - all
+          - management-system
+          - cyber-security
+          - product-certification
+
+concurrency:
+  group: sgca-insight-draft
+  cancel-in-progress: false
 
 jobs:
   generate-insight:
@@ -49,6 +62,7 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           FIREBASE_PROJECT_ID: sgca-platform-7abbc
+          INSIGHT_CATEGORY: ${{ inputs.category || 'all' }}
         run: node scripts/generate-insight.js
 
       - name: Verify authenticated Firestore access

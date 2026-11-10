@@ -1,5 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { discoverSources } = require('./source-discovery');
+const { generateCategoryReport } = require('./generate-insight');
 const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy } = require('../js/insight-data');
 const { publishedDocuments } = require('./build-site');
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
@@ -194,4 +196,69 @@ test('reviewed edits preserve source identity and dates only for the same origin
   const supplied = savePayload(values,prior,values,true,{title:'Reviewed title',publishedDate:'2026-10-10'});
   assert.equal(supplied.sourceVerification.title,'Reviewed title');
   assert.equal(supplied.sourceVerification.publishedDate,'2026-10-10');
+});
+
+test('grounded references survive title differences while generated URLs are ignored', async () => {
+  const uri = 'https://csrc.nist.gov/News/2026/verified';
+  const requested = [];
+  const result = await discoverSources({category:'cyber-security',today:'2026-11-09',
+    search:async()=>({report:{sourceTitle:'Title wording from model',link:'https://example.org/fake'},
+      grounding:{groundingChunks:[{web:{uri,title:'Different publisher title'}}],groundingSupports:[{groundingChunkIndices:[0]}]}}),
+    fetchImpl:async u=>{requested.push(u);return new Response('<title>Publisher title | CSRC</title><meta property="article:published_time" content="2026-11-04"><main><small id="news-date">November 09, 2026</small>'+ 'Verified publisher article content. '.repeat(12)+'</main>',{headers:{'content-type':'text/html'}});}
+  });
+  assert.deepEqual(requested,[uri]);
+  assert.equal(result.sources[0].url,uri);
+  assert.equal(result.sources[0].title,'Publisher title | CSRC');
+  assert.equal(result.sources[0].date,'2026-11-09');
+});
+
+test('search skip can recover a fresh official article and preserves its displayed publication date', async () => {
+  const base='https://digital-strategy.ec.europa.eu';
+  const uri=base+'/en/news/cyber-statement';
+  const calls=[];
+  const result=await discoverSources({category:'cyber-security',today:'2026-11-09',
+    search:async()=>({report:{skip:true},grounding:{}}),log:{warn(){}},
+    fetchImpl:async u=>{
+      calls.push(u);
+      const body=u===base+'/en/news'?'<a href="/en/news/cyber-statement">Read</a><a href="https://example.org/en/news/cyber-fake">Ignore</a>':
+        u===uri?'<title>Official Statement</title><header><li class="ecl-page-header__meta-item">Publication 04 November 2026</li></header><meta property="article:published_time" content="2026-11-03T23:00:00Z"><main>'+ 'Official statement body. '.repeat(15)+'</main>':'';
+      return new Response(body,{status:body?200:503,headers:{'content-type':'text/html'}});
+    }
+  });
+  assert.equal(result.reason,'publisher index');
+  assert.equal(result.sources[0].date,'2026-11-04');
+  assert.deepEqual(result.sources[0].dates,['2026-11-04']);
+  assert.ok(!calls.some(u=>u.includes('example.org')));
+});
+
+test('failed search and unavailable official indexes are reported as failure, not no news', async () => {
+  await assert.rejects(discoverSources({category:'cyber-security',today:'2026-11-09',
+    search:async()=>{throw Error('Gemini API Error (503)');},fetchImpl:async()=>new Response('',{status:503}),log:{warn(){}}}),/Discovery incomplete/);
+});
+
+test('a rejected article falls back to a different verified original without bypassing translation review', async () => {
+  const source={url:'https://csrc.nist.gov/News/2026/verified',title:'Verified title',date:'2026-11-04',dates:['2026-11-04'],text:'Verified publisher statement with a long exact quotation for checking.',sha256:'fixture'};
+  const rejected={...source,url:'https://csrc.nist.gov/News/2026/unrelated'};
+  const modes=[];
+  let requests=0;
+  const report=await generateCategoryReport('cyber-security','2026-11-09','',[],{
+    discover:async opts=>{
+      modes.push(!!opts.onlyOfficial);
+      if (opts.onlyOfficial) assert.ok(opts.existingLinks.includes(rejected.url));
+      return opts.onlyOfficial?{reason:'publisher index',sources:[source]}:{reason:'grounded',sources:[rejected]};
+    },
+    ask:async(_, payload, useSearch)=>{
+      assert.equal(useSearch,false);
+      requests++;
+      if (requests===1) return {report:{skip:true}};
+      if (requests===2) return {report:{title:'한글',titleEn:'English',desc:'요약',descEn:'Summary',fullContent:'<p>본문</p>',fullContentEn:'<p>Body</p>',sourceTitle:source.title,sourcePublishedDate:source.date,sourceQuote:source.text,link:'https://example.org/fake'}};
+      assert.equal(JSON.parse(payload).report.link,source.url);
+      return {report:{supported:true,translationAccurate:true,issues:[]}};
+    }
+  });
+  assert.deepEqual(modes,[false,true]);
+  assert.equal(requests,3);
+  assert.equal(report.link,source.url);
+  assert.equal(report.date,source.date);
+  assert.equal(report.sourceVerification.translationAccurate,true);
 });
