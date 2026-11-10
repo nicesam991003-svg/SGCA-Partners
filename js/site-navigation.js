@@ -85,32 +85,57 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', restart); render(); restart();
   }
   const searchInput = document.getElementById('insight-search');
-  function saveInsightFilters() {
+  function saveInsightFilters(url) {
     const filters = window.insightFilters;
     if (!filters) return;
     const saved = history.state?.insightFilters;
-    if (saved?.category === filters.category && saved.keyword === filters.keyword) return;
-    history.replaceState({...history.state, insightFilters: {...filters}}, '');
+    if (!url && saved?.category === filters.category && saved.keyword === filters.keyword) return;
+    history.replaceState({...history.state, insightFilters: {...filters}}, '', url ?? location.href);
   }
   if (searchInput) {
     const tabs = [...document.querySelectorAll('.filter-tab')];
+    const languageLinks = [...document.querySelectorAll('.language-selector a.lang-btn:not(.active)')]
+      .map(link => ({link, href: link.href}));
+    const filterFragment = '#insight-filters?';
     const filters = window.insightFilters = {category: 'all', keyword: ''};
     let searchTimeout;
 
+    function updateLanguageLinks() {
+      const params = new URLSearchParams();
+      if (filters.keyword) params.set('q', filters.keyword);
+      if (filters.category !== 'all') params.set('category', filters.category);
+      const encoded = params.toString();
+      for (const {link, href} of languageLinks) {
+        const destination = new URL(href);
+        if (encoded) destination.hash = filterFragment + encoded;
+        link.href = destination.href;
+      }
+    }
     function setCategory(category) {
       filters.category = category;
       tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.cat === category));
     }
-    function restoreFilters() {
-      const saved = history.state?.insightFilters;
+    function restoreFilters(saved = history.state?.insightFilters) {
       const category = tabs.some(tab => tab.dataset.cat === saved?.category) ? saved.category : 'all';
-      const keyword = typeof saved?.keyword === 'string' ? saved.keyword : '';
+      searchInput.value = typeof saved?.keyword === 'string' ? saved.keyword : '';
+      const keyword = searchInput.value;
       const changed = filters.category !== category || filters.keyword !== keyword;
       setCategory(category);
-      filters.keyword = searchInput.value = keyword;
+      filters.keyword = keyword;
+      updateLanguageLinks();
       return changed;
     }
-    restoreFilters();
+    const url = new URL(location.href);
+    if (url.hash.startsWith(filterFragment)) {
+      // The fragment passes the filters between language pages without sending search terms to the server.
+      const params = new URLSearchParams(url.hash.slice(filterFragment.length));
+      restoreFilters({category: params.get('category'), keyword: params.get('q')});
+      url.hash = '';
+      saveInsightFilters(url);
+    } else {
+      restoreFilters();
+    }
+    for (const {link} of languageLinks) link.addEventListener('click', () => saveInsightFilters());
     window.addEventListener('popstate', () => {
       if (!restoreFilters()) return;
       clearTimeout(searchTimeout);
@@ -118,12 +143,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     tabs.forEach(tab => tab.addEventListener('click', () => {
       setCategory(tab.dataset.cat);
+      updateLanguageLinks();
       saveInsightFilters();
       clearTimeout(searchTimeout);
       window.renderInsightCards(6);
     }));
     searchInput.addEventListener('input', () => {
       filters.keyword = searchInput.value;
+      updateLanguageLinks();
       clearTimeout(searchTimeout);
       searchTimeout = setTimeout(() => {
         saveInsightFilters();
