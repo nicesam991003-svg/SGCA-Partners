@@ -84,6 +84,53 @@ document.addEventListener('DOMContentLoaded', () => {
     slidesContainer.closest('.hero-slider').addEventListener('focusin', () => { paused = true; restart(); });
     document.addEventListener('visibilitychange', restart); render(); restart();
   }
+  const searchInput = document.getElementById('insight-search');
+  function saveInsightFilters() {
+    const filters = window.insightFilters;
+    if (!filters) return;
+    const saved = history.state?.insightFilters;
+    if (saved?.category === filters.category && saved.keyword === filters.keyword) return;
+    history.replaceState({...history.state, insightFilters: {...filters}}, '');
+  }
+  if (searchInput) {
+    const tabs = [...document.querySelectorAll('.filter-tab')];
+    const filters = window.insightFilters = {category: 'all', keyword: ''};
+    let searchTimeout;
+
+    function setCategory(category) {
+      filters.category = category;
+      tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.cat === category));
+    }
+    function restoreFilters() {
+      const saved = history.state?.insightFilters;
+      const category = tabs.some(tab => tab.dataset.cat === saved?.category) ? saved.category : 'all';
+      const keyword = typeof saved?.keyword === 'string' ? saved.keyword : '';
+      const changed = filters.category !== category || filters.keyword !== keyword;
+      setCategory(category);
+      filters.keyword = searchInput.value = keyword;
+      return changed;
+    }
+    restoreFilters();
+    window.addEventListener('popstate', () => {
+      if (!restoreFilters()) return;
+      clearTimeout(searchTimeout);
+      window.renderInsightCards(6);
+    });
+    tabs.forEach(tab => tab.addEventListener('click', () => {
+      setCategory(tab.dataset.cat);
+      saveInsightFilters();
+      clearTimeout(searchTimeout);
+      window.renderInsightCards(6);
+    }));
+    searchInput.addEventListener('input', () => {
+      filters.keyword = searchInput.value;
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        saveInsightFilters();
+        window.renderInsightCards(6);
+      }, 150);
+    });
+  }
   const modal = document.getElementById('insightModal');
   if (modal && window.openInsightModal) {
     const originalOpen = window.openInsightModal, originalClose = window.closeInsightModal;
@@ -112,7 +159,12 @@ document.addEventListener('DOMContentLoaded', () => {
       else window.loadInsightDocument(id).then(data => {
         if (openReportId === id) showProvenance(data);
       }).catch(() => {});
-      if (!fromUrl) { const url = new URL(location.href); url.searchParams.set('report', id); history.pushState({sgcaReport:true}, '', url); }
+      if (!fromUrl) {
+        saveInsightFilters();
+        const url = new URL(location.href);
+        url.searchParams.set('report', id);
+        history.pushState(history.state, '', url);
+      }
       document.body.classList.add('report-open');
       document.querySelectorAll('body > *').forEach(element => { if (element !== modal && !element.contains(modal)) element.inert = true; });
       modal.querySelector('.insight-modal-close').focus();
@@ -125,8 +177,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.closeInsightModal = function() {
       hideInsightModal();
-      if (previousUrl && !new URL(previousUrl).searchParams.has('report')) history.replaceState(null, '', previousUrl);
-      else { const url = new URL(location.href); url.searchParams.delete('report'); history.replaceState(null, '', url); }
+      const url = new URL(previousUrl || location.href);
+      url.searchParams.delete('report');
+      history.replaceState(history.state, '', url);
     };
     document.addEventListener('click', event => {
       const link = event.target.closest('a[data-report-id]');
@@ -151,27 +204,26 @@ document.addEventListener('DOMContentLoaded', () => {
       if (report) window.openInsightModal(report, {fromUrl:true});
     });
     const report = reportFromUrl();
-    if (report) {
-      let done = false, expanded = false;
+    if (searchInput) {
+      document.addEventListener('insight-list-ready', () => {
+        const currentReport = reportFromUrl();
+        if (currentReport && !isOpen()) window.openInsightModal(currentReport, {fromUrl:true});
+      }, {once:true});
+    } else if (report) {
+      let done = false;
       const observer = new MutationObserver(() => {
         if (done || reportFromUrl() !== report) return;
-        if (!document.querySelector(`[data-report-id="${CSS.escape(encodeURIComponent(report))}"]`)) {
-          if (!expanded && document.querySelector('.rss-card') && typeof window.renderInsightCards === 'function') { expanded=true; window.renderInsightCards(1000); }
-          return;
-        }
+        if (!document.querySelector(`[data-report-id="${CSS.escape(encodeURIComponent(report))}"]`)) return;
         done = true; observer.disconnect(); window.openInsightModal(report, {fromUrl:true});
       });
       observer.observe(document.body, {childList:true, subtree:true});
-      // A link to a report beyond the initial six also loads through the verified public source.
+      // A report outside the homepage cards still loads from the verified public source.
       window.loadInsightSnapshot({preferStatic:true}).then(snapshot => {
         const item = snapshot.docs.find(doc=>doc.id===report); if (!item || done || reportFromUrl() !== report) return;
-        if (typeof window.renderInsightCards === 'function') window.renderInsightCards(snapshot.size);
-        else {
-          done = true; observer.disconnect();
-          const data=item.data();
-          if (Array.isArray(window.allInsights) && !window.allInsights.some(item=>item.id===report)) window.allInsights.push({id:report,...data});
-          window.openInsightModal(report,{fromUrl:true});
-        }
+        done = true; observer.disconnect();
+        const data=item.data();
+        if (Array.isArray(window.allInsights) && !window.allInsights.some(item=>item.id===report)) window.allInsights.push({id:report,...data});
+        window.openInsightModal(report,{fromUrl:true});
       }).catch(()=>{});
     }
   }
