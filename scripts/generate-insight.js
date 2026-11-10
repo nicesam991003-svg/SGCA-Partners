@@ -5,6 +5,7 @@
  */
 
 const https = require('https');
+const { createHash } = require('node:crypto');
 const { GoogleAuth } = require('google-auth-library');
 const { verifyEvidence, firestoreValue } = require('./source-verification');
 const { discoverSources } = require('./source-discovery');
@@ -379,33 +380,37 @@ Do not include hyperlinks in HTML.`, JSON.stringify({ today, category: categoryK
 // 7. Firestore에 단일 리포트 저장
 // ─────────────────────────────────────────
 async function saveToFirestore(report) {
-  if (report.sourceVerification?.status !== 'verified' || report.sourceVerification.translationAccurate !== true || report.link !== report.sourceVerification.url) throw new Error('Unverified report cannot be saved');
-  const doc = {
-    fields: {
-      title:       { stringValue: report.title       || '' },
-      titleEn:     { stringValue: report.titleEn     || '' },
-      category:    { stringValue: report.category    || '' },
-      date:        { stringValue: report.date        || '' },
-      link:        { stringValue: report.link },
-      sourceVerification: firestoreValue(report.sourceVerification),
-      desc:        { stringValue: report.desc        || '' },
-      descEn:      { stringValue: report.descEn      || '' },
-      fullContent: { stringValue: report.fullContent || '' },
-      fullContentEn: { stringValue: report.fullContentEn || '' },
-      status:      { stringValue: 'draft' },
-      createdAt:   { stringValue: new Date().toISOString() }
-    }
+  if (typeof report.link !== 'string' || !report.link || report.sourceVerification?.status !== 'verified' || report.sourceVerification.translationAccurate !== true || report.link !== report.sourceVerification.url) throw new Error('Unverified report cannot be saved');
+  const fields = {
+    title:       { stringValue: report.title       || '' },
+    titleEn:     { stringValue: report.titleEn     || '' },
+    category:    { stringValue: report.category    || '' },
+    date:        { stringValue: report.date        || '' },
+    link:        { stringValue: report.link },
+    sourceVerification: firestoreValue(report.sourceVerification),
+    desc:        { stringValue: report.desc        || '' },
+    descEn:      { stringValue: report.descEn      || '' },
+    fullContent: { stringValue: report.fullContent || '' },
+    fullContentEn: { stringValue: report.fullContentEn || '' },
+    status:      { stringValue: 'draft' },
+    createdAt:   { stringValue: new Date().toISOString() }
   };
 
-  const hostname = 'firestore.googleapis.com';
-  const path = `/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents/insights`;
-  
-  const res = await httpsPost(hostname, path, await firestoreHeaders(), doc);
+  // The verified URL identifies the draft across concurrent runs and retries.
+  const id = 'source-' + createHash('sha256').update(report.link).digest('hex');
+  const database = `projects/${FIREBASE_PROJECT_ID}/databases/(default)`;
+  const res = await httpsPost('firestore.googleapis.com', `/v1/${database}/documents:commit`, await firestoreHeaders(), {
+    writes: [{
+      update: { name: `${database}/documents/insights/${id}`, fields },
+      currentDocument: { exists: false }
+    }]
+  });
 
+  if (res.status === 409 && res.body.error?.status === 'ALREADY_EXISTS') return { id, created: false };
   if (res.status !== 200) {
     throw new Error(`Firestore 저장 실패 (${res.status}): ${JSON.stringify(res.body)}`);
   }
-  return res.body.name.split('/').pop();
+  return { id, created: true };
 }
 
 // ─────────────────────────────────────────
@@ -462,10 +467,9 @@ async function main() {
       if (report.skip === true) {
         results.push({ label: config.label, outcome: 'no-candidate', reason: report.reason });
       } else {
-        const docId  = await saveToFirestore(report);
+        const { id: docId, created } = await saveToFirestore(report);
         existingReports.push({ title: report.title, link: report.link });
-        results.push({ label: config.label, outcome: 'draft', title: report.title, docId });
-        console.log(`  💾 Firestore 저장 완료 (ID: ${docId})`);
+        results.push({ label: config.label, outcome: created ? 'draft' : 'duplicate', title: report.title, docId });
       }
     } catch (e) {
       console.error(`  ❌ ${config.label} 실패: ${e.message}`);
@@ -493,6 +497,9 @@ async function main() {
     if (result.outcome === 'draft') {
       console.log(`✅ [${result.label}] 초안 저장: ${result.title} (문서 ID: ${result.docId})`);
       summary.push(`- ${result.label}: 초안 1건 저장 — 관리자 검토 필요`);
+    } else if (result.outcome === 'duplicate') {
+      console.log(`⏭️ [${result.label}] 동일 원문으로 이미 등록됨 (문서 ID: ${result.docId})`);
+      summary.push(`- ${result.label}: 동일 원문으로 이미 등록됨`);
     } else {
       const reason = noCandidateLabels[result.reason] || '검증 가능한 새 원문을 확인하지 못함';
       console.log(`⏭️ [${result.label}] ${reason}`);

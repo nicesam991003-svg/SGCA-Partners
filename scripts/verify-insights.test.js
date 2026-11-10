@@ -163,6 +163,49 @@ test('storage rejects reports with no original, mismatched links or unchecked tr
   await assert.rejects(saveToFirestore({ link: 'https://nist.gov/x' }), /Unverified/);
   await assert.rejects(saveToFirestore({ link: 'https://nist.gov/x', sourceVerification: { status: 'verified', url: 'https://nist.gov/x' } }), /Unverified/);
   await assert.rejects(saveToFirestore({ link: 'https://nist.gov/wrong', sourceVerification: { status: 'verified', translationAccurate: true, url: 'https://nist.gov/original' } }), /Unverified/);
+  await assert.rejects(saveToFirestore({ sourceVerification: { status: 'verified', translationAccurate: true } }), /Unverified/);
+});
+test('storage creates the verified draft once and never overwrites it on retry', async t => {
+  const { EventEmitter } = require('node:events');
+  const { GoogleAuth } = require('google-auth-library');
+  const https = require('node:https');
+  const requests = [];
+  const replies = [
+    { status: 200, body: { writeResults: [{}] } },
+    { status: 409, body: { error: { status: 'ALREADY_EXISTS' } } },
+    { status: 403, body: { error: { status: 'PERMISSION_DENIED' } } }
+  ];
+  t.mock.method(GoogleAuth.prototype, 'getRequestHeaders', async () => ({ authorization: 'Bearer mock' }));
+  t.mock.method(https, 'request', (options, receive) => {
+    const request = new EventEmitter();
+    request.setTimeout = () => {};
+    request.write = data => requests.push({ options, body: JSON.parse(data) });
+    request.end = () => {
+      const { status, body } = replies.shift();
+      const response = new EventEmitter();
+      response.statusCode = status;
+      receive(response);
+      response.emit('data', Buffer.from(JSON.stringify(body)));
+      response.emit('end');
+    };
+    return request;
+  });
+
+  const link = 'https://nist.gov/news/example';
+  const report = { link, sourceVerification: { status: 'verified', translationAccurate: true, url: link } };
+  const first = await saveToFirestore(report);
+  assert.equal(first.created, true);
+  assert.match(first.id, /^source-[0-9a-f]{64}$/);
+  assert.deepEqual(await saveToFirestore(report), { id: first.id, created: false });
+  await assert.rejects(saveToFirestore(report), /403.*PERMISSION_DENIED/);
+  for (const { options, body } of requests) {
+    assert.match(options.path, /\/documents:commit$/);
+    assert.equal(options.headers.authorization, 'Bearer mock');
+    assert.equal(body.writes.length, 1);
+    assert.deepEqual(body.writes[0].currentDocument, { exists: false });
+    assert.ok(body.writes[0].update.name.endsWith('/insights/' + first.id));
+    assert.deepEqual(body.writes[0].update.fields.status, { stringValue: 'draft' });
+  }
 });
 test('editor fills every Korean and English field for both published reports and generated drafts', () => {
   const report = { id: 'existing', title: '한글 제목', titleEn: 'English title', category: 'cyber-security', date: '2026-10-12', link: 'https://nist.gov/news', desc: '요약', descEn: 'Summary', fullContent: '<p>본문</p>', fullContentEn: '<p>Body</p>', status: 'draft' };
