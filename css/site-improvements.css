@@ -11,6 +11,27 @@
 .report-language-notice,.snapshot-freshness {font-size:.9rem;line-height:1.6;margin:12px 0;color:#64748b}
 .main-rss-feed-container .snapshot-freshness,#latest-insights .report-language-notice {color:#d4dce8}
 .insight-modal-close {background:transparent;border:0;font:inherit;cursor:pointer;padding:8px;min-width:44px;min-height:44px}
+.report-language-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 48px 8px 0;
+}
+.report-language-selector .lang-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 8px;
+  color: #475569;
+  text-decoration: none;
+}
+.report-language-selector .active {
+  background: #f5f0e7;
+  color: var(--color-deep-navy);
+  cursor: default;
+}
 .modal-provenance {margin:12px 0;font-size:.85rem;color:#596579;line-height:1.5}
 .modal-provenance p {margin:3px 0}
 .report-open,.navigation-open {overflow:hidden}

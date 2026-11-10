@@ -85,6 +85,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('visibilitychange', restart); render(); restart();
   }
   const searchInput = document.getElementById('insight-search');
+  const modal = document.getElementById('insightModal');
+  let updateLanguageLinks;
   function saveInsightFilters(url) {
     const filters = window.insightFilters;
     if (!filters) return;
@@ -94,23 +96,40 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (searchInput) {
     const tabs = [...document.querySelectorAll('.filter-tab')];
-    const languageLinks = [...document.querySelectorAll('.language-selector a.lang-btn:not(.active)')]
+    const headerLanguages = [...document.querySelectorAll('.language-selector a.lang-btn')];
+    const languageLinks = headerLanguages.filter(link => !link.classList.contains('active'))
       .map(link => ({link, href: link.href}));
+    const reportLanguages = document.getElementById('modalLanguages');
+    const reportLanguageLinks = [];
+    if (reportLanguages) {
+      const names = {KR: '한국어', EN: 'English', JP: '日本語', CN: '简体中文'};
+      for (const link of headerLanguages) {
+        const current = link.classList.contains('active');
+        const control = current ? document.createElement('span') : link.cloneNode(true);
+        control.className = link.className;
+        control.textContent = link.textContent.trim();
+        control.setAttribute('aria-label', names[control.textContent]);
+        if (current) control.setAttribute('aria-current', 'page');
+        else reportLanguageLinks.push({link: control, href: link.href});
+        reportLanguages.append(control);
+      }
+    }
     const filterFragment = '#insight-filters?';
     const filters = window.insightFilters = {category: 'all', keyword: ''};
     let searchTimeout;
 
-    function updateLanguageLinks() {
+    updateLanguageLinks = function(reportId) {
       const params = new URLSearchParams();
       if (filters.keyword) params.set('q', filters.keyword);
       if (filters.category !== 'all') params.set('category', filters.category);
       const encoded = params.toString();
-      for (const {link, href} of languageLinks) {
+      for (const {link, href} of reportId ? reportLanguageLinks : languageLinks) {
         const destination = new URL(href);
+        if (reportId) destination.searchParams.set('report', reportId);
         if (encoded) destination.hash = filterFragment + encoded;
         link.href = destination.href;
       }
-    }
+    };
     function setCategory(category) {
       filters.category = category;
       tabs.forEach(tab => tab.classList.toggle('active', tab.dataset.cat === category));
@@ -158,7 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 150);
     });
   }
-  const modal = document.getElementById('insightModal');
   if (modal && window.openInsightModal) {
     const originalOpen = window.openInsightModal, originalClose = window.closeInsightModal;
     let previousFocus, previousUrl, openReportId;
@@ -182,6 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
       originalOpen(id);
       if (!isOpen()) return;
       openReportId = id;
+      updateLanguageLinks?.(id);
       if (item) showProvenance(item);
       else window.loadInsightDocument(id).then(data => {
         if (openReportId === id) showProvenance(data);
