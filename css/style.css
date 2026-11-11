@@ -1085,7 +1085,12 @@ nav {
     transform: translateY(-8px) rotate(-45deg);
 }
 
-@media (max-width: 992px) {
+@media (min-width: 1241px) and (max-width: 1450px) {
+    .navbar .container { gap: 1.25rem; }
+    .navbar .nav-links { gap: clamp(.75rem, 1.4vw, 1.35rem); }
+}
+
+@media (max-width: 1240px) {
     .mobile-menu-btn {
         display: block;
         order: 3; /* Place on the right side */
@@ -1094,6 +1099,7 @@ nav {
     .navbar .container {
         justify-content: space-between;
         align-items: center;
+        gap: 0.5rem;
         padding: 0 1rem;
         position: relative;
         min-height: 80px;
@@ -1119,6 +1125,10 @@ nav {
     
     nav.active {
         left: 0;
+    }
+
+    .navbar nav[inert] {
+        visibility: hidden;
     }
     
     .nav-links {

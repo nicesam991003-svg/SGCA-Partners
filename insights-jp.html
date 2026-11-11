@@ -17,7 +17,7 @@
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
-    <link rel="stylesheet" href="css/style.css?v=1.1">
+    <link rel="stylesheet" href="css/style.css?v=1.3">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -29,7 +29,7 @@
     <link rel="alternate" hreflang="ja" href="https://sgca-partners.com/insights-jp.html">
     <link rel="alternate" hreflang="zh-Hans" href="https://sgca-partners.com/insights-cn.html">
     <link rel="alternate" hreflang="x-default" href="https://sgca-partners.com/insights.html">
-    <link rel="stylesheet" href="css/site-improvements.css?v=1.4">
+    <link rel="stylesheet" href="css/site-improvements.css?v=1.5">
 </head>
 <body>
     <header class="navbar">
@@ -135,18 +135,15 @@
             </div>
 
             <!-- Admin Entry Button -->
-            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
-                <button onclick="checkAdminPassword()" style="background-color: var(--color-deep-navy); color: var(--color-crisp-white); border: none; padding: 10px 20px; border-radius: 4px; font-weight: 600; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; transition: opacity 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                    新規レポート登録 (管理者)
-                </button>
+            <div class="insight-admin-actions">
+                <a class="insight-admin-action" href="admin.html">新規レポート登録（管理者）</a>
+                <button type="button" class="insight-admin-action insight-admin-action-secondary"
+                        id="insight-manage-reports" aria-controls="draft-section published-manage-section"
+                        aria-expanded="false" onclick="openReportManagement()">レポート管理（管理者）</button>
             </div>
 
             <!-- ★ 下書きレポート Section (visible after admin login) -->
-            <div id="draft-section" style="display:none; margin-top: 48px;">
+            <div id="draft-section" tabindex="-1" style="display:none; margin-top: 48px;">
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
@@ -221,12 +218,16 @@
                 let allDrafts = [];
                 let allPublished = [];
 
-                async function checkAdminPassword() {
+                async function openReportManagement() {
                     try {
                         await window.requireAdminAccess({ interactive: true });
                         isAdminMode = true;
                         if (window.fetchInsightsAndRender) await window.fetchInsightsAndRender();
-                        await loadAdminSections();
+                        loadAdminSections();
+                        document.getElementById('insight-manage-reports').setAttribute('aria-expanded', 'true');
+                        const draftSection = document.getElementById('draft-section');
+                        draftSection.focus({ preventScroll: true });
+                        draftSection.scrollIntoView({ block: 'start' });
                     } catch (error) { alert(error.message); }
                 }
 
@@ -516,7 +517,7 @@
         </div>
     </div>
 
-    <script src="js/site-navigation.js?v=1.5"></script>
+    <script src="js/site-navigation.js?v=1.6"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-auth-compat.js"></script>

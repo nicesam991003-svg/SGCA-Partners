@@ -15,12 +15,12 @@ document.addEventListener('DOMContentLoaded', () => {
     button.innerHTML = '<span></span><span></span><span></span>';
     button.setAttribute('aria-controls', nav.id);
     bar.append(button);
-    const mobile = matchMedia('(max-width: 992px)');
+    const mobile = matchMedia('(max-width: 1240px)');
     function setMenu(open) {
       button.classList.toggle('active', open); nav.classList.toggle('active', open);
       button.setAttribute('aria-label', words[open ? 1 : 0]);
       button.setAttribute('aria-expanded', String(open));
-      nav.inert = mobile.matches && !open;
+      nav.toggleAttribute('inert', mobile.matches && !open);
       document.body.classList.toggle('navigation-open', mobile.matches && open);
     }
     button.addEventListener('click', () => setMenu(!nav.classList.contains('active')));
