@@ -143,6 +143,9 @@
                 title: document.getElementById('source-title').value.trim(),
                 publishedDate: document.getElementById('source-date').value
             });
+            if (payload.status === 'published' && editing?.status !== 'published') {
+                payload.publishedAt = firebase.firestore.FieldValue.serverTimestamp();
+            }
             busy(true);
             let saved = false;
             try {

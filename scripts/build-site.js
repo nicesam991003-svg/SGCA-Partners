@@ -2,7 +2,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const {decodeFields, getInsightSourceLink} = require('../js/insight-data');
 const projectId = 'sgca-platform-7abbc';
-const fieldNames = ['title','titleEn','category','date','createdAt','link','desc','descEn','fullContent','fullContentEn','status','sourceVerification'];
+const fieldNames = ['title','titleEn','category','date','createdAt','publishedAt','link','desc','descEn','fullContent','fullContentEn','status','sourceVerification'];
 function publishedDocuments(rows) {
   if (!Array.isArray(rows) || rows.some(r=>r.error || (!r.document && !r.readTime))) throw new Error('Invalid published report response');
   return rows.filter(r=>r.document).map(({document:doc})=>{

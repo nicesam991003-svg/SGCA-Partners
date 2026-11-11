@@ -352,7 +352,7 @@
                     if (!confirm("このレポートをサイトに公開しますか？")) return;
                     try {
                         await window.requireVerifiedInsight(id);
-                        await db.collection("insights").doc(id).update({ status: 'published' });
+                        await db.collection("insights").doc(id).update({ status: 'published', publishedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         alert("公開完了！レポートがインサイトページに表示されます。");
                         await loadAdminSections();
                         allInsights = [];

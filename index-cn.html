@@ -282,7 +282,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore-compat.js"></script>
     <script defer src="js/firebase-init.js?v=1.5"></script>
-    <script defer src="js/insight-data.js?v=2.3"></script>
+    <script defer src="js/insight-data.js?v=2.4"></script>
     <script>
         // Global db variable is configured in js/firebase-init.js.
 
@@ -305,7 +305,7 @@
                     }
                 });
                 
-                window.allInsights = window.allInsights.slice(0, 4);
+                window.allInsights = window.selectLatestInsights(window.allInsights);
 
                 if (window.allInsights.length === 0) {
                     if (querySnapshot.empty) {

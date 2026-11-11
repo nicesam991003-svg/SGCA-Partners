@@ -352,7 +352,7 @@
                     if (!confirm("是否将此报告发布到网站？")) return;
                     try {
                         await window.requireVerifiedInsight(id);
-                        await db.collection("insights").doc(id).update({ status: 'published' });
+                        await db.collection("insights").doc(id).update({ status: 'published', publishedAt: firebase.firestore.FieldValue.serverTimestamp() });
                         alert("发布成功！报告已在行业洞察页面显示。");
                         await loadAdminSections();
                         allInsights = [];

@@ -2,7 +2,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { discoverSources } = require('./source-discovery');
 const { generateCategoryReport } = require('./generate-insight');
-const { makeSnapshot, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy } = require('../js/insight-data');
+const { makeSnapshot, selectLatestInsights, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy } = require('../js/insight-data');
 const { publishedDocuments } = require('./build-site');
 const { allowedUrl, fetchSource, verifyEvidence, publicationDates } = require('./source-verification');
 const { saveToFirestore, validateApiConfiguration } = require('./generate-insight');
@@ -138,8 +138,20 @@ test('permission failures do not silently switch an administrator or public requ
 });
 test('the website export includes only verified published reports and strips unrelated fields', () => {
   const doc=publicCopy().documents[0];doc.fields.internalNote={stringValue:'not for public export'};
+  doc.fields.publishedAt={timestampValue:'2026-11-11T10:00:00Z'};
   const exported=publishedDocuments([{document:doc}]);assert.equal(exported.length,1);assert.equal(exported[0].fields.internalNote,undefined);
+  assert.deepEqual(exported[0].fields.publishedAt,doc.fields.publishedAt);
   doc.fields.status.stringValue='draft';assert.throws(()=>publishedDocuments([{document:doc}]),/private/);
+});
+test('homepage shows a newly published older source without changing its source date or showing drafts', () => {
+  const published = (id, date) => ({ id, date, status: 'published' });
+  const newReport = { ...published('cswp50', '2026-11-02'), publishedAt: '2026-11-11T10:00:00Z' };
+  const reports = [published('latest-source', '2026-11-09'), published('eu', '2026-11-04'),
+    published('a', '2026-11-03'), published('b', '2026-11-03'), newReport,
+    { id: 'draft', status: 'draft', date: '2026-11-12' }];
+  const cards = selectLatestInsights(reports);
+  assert.deepEqual(cards.map(report => report.id), ['cswp50', 'latest-source', 'eu', 'a']);
+  assert.equal(cards[0].date, '2026-11-02');
 });
 test('no unverified, credential-bearing, unsafe or grounding links reach source buttons', () => {
   for (const link of ['#', 'javascript:alert(1)', 'http://cisa.gov/news', 'https://u:p@cisa.gov/news', 'https://vertexaisearch.cloud.google.com/grounding-api-redirect/x']) assert.equal(getInsightSourceLink({ link }), '');

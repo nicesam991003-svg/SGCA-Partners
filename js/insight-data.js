@@ -23,6 +23,12 @@
         }).sort((a, b) => b.data().date.localeCompare(a.data().date) || a.id.localeCompare(b.id));
         return { empty: docs.length === 0, size: docs.length, docs, forEach: fn => docs.forEach(fn) };
     }
+    function selectLatestInsights(reports) {
+        const publicationTime = report => Date.parse(report.publishedAt) || Date.parse(report.date) || 0;
+        return reports.filter(report => report.status === 'published')
+            .sort((a, b) => publicationTime(b) - publicationTime(a) || a.id.localeCompare(b.id))
+            .slice(0, 4);
+    }
     function verifiedPublishedCopy(copy, now = Date.now()) {
         if (!copy || copy.projectId !== firebaseConfig.projectId || !Array.isArray(copy.documents) ||
             !Number.isFinite(Date.parse(copy.generatedAt)) || now - Date.parse(copy.generatedAt) > 86400000 || Date.parse(copy.generatedAt) > now + 300000) {
@@ -177,10 +183,11 @@
     }
     root.loadInsightSnapshot = loadInsightSnapshot;
     root.loadInsightDocument = loadInsightDocument;
+    root.selectLatestInsights = selectLatestInsights;
     root.getInsightSourceLink = getInsightSourceLink;
     root.getInsightTitle = getInsightTitle;
     root.showInsightSourceNotice = showInsightSourceNotice;
     root.requireVerifiedInsight = requireVerifiedInsight;
     root.showInsightLoadError = showInsightLoadError;
-    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy };
+    if (typeof module !== 'undefined') module.exports = { decodeFields, makeSnapshot, selectLatestInsights, getInsightSourceLink, loadInsightSnapshot, loadInsightDocument, verifiedPublishedCopy };
 })(typeof window !== 'undefined' ? window : globalThis);
