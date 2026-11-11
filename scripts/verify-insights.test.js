@@ -86,6 +86,33 @@ function publicCopy(project = 'sgca-platform-7abbc') {
       sourceVerification:{mapValue:{fields:{status:{stringValue:'verified'},url:{stringValue:'https://nist.gov/news/verified'},translationAccurate:{booleanValue:true}}}}}
   }]};
 }
+test('Safari 15 can load the report list, detail and verified copy without AbortSignal.timeout', async (t) => {
+  const timeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout');
+  const originalProject = global.firebaseConfig;
+  delete AbortSignal.timeout;
+  global.firebaseConfig = { projectId: 'sgca-platform-7abbc' };
+  t.after(() => {
+    if (timeout) Object.defineProperty(AbortSignal, 'timeout', timeout);
+    global.firebaseConfig = originalProject;
+  });
+  const copy = publicCopy();
+  const report = copy.documents[0];
+  let firestoreUnavailable = false;
+  t.mock.method(global, 'fetch', async (url, { signal }) => {
+    assert.equal(signal.aborted, false);
+    if (url === 'data/insights.json') return Response.json(copy);
+    if (firestoreUnavailable) throw new TypeError('Failed to fetch');
+    return Response.json(url.endsWith(':runQuery') ? [{ document: report }] : report);
+  });
+
+  assert.equal((await loadInsightSnapshot({ preferStatic: true })).docs[0].id, 'verified');
+  assert.equal((await loadInsightDocument('verified')).id, 'verified');
+  firestoreUnavailable = true;
+  const fallback = await loadInsightSnapshot({ preferStatic: true });
+  assert.equal(fallback.docs[0].id, 'verified');
+  assert.equal(fallback.generatedAt, copy.generatedAt);
+});
+
 test('a blocked browser API request can use only a fresh verified published copy', async () => {
   const original=global.fetch;global.firebaseConfig={projectId:'sgca-platform-7abbc'};let calls=[];
   global.fetch=async url=>{calls.push(url);if(url.startsWith('https://firestore.googleapis.com/'))throw new TypeError('Failed to fetch');return new Response(JSON.stringify(publicCopy()));};

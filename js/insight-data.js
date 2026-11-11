@@ -43,6 +43,18 @@
         if (root.dispatchEvent && typeof CustomEvent !== 'undefined') root.dispatchEvent(new CustomEvent('insight-snapshot', {detail:{generatedAt:snapshot.generatedAt}}));
         return snapshot;
     }
+    async function fetchInsightJson(url, options, timeoutMs, onHttpError) {
+        // Safari 15 supports AbortController but not AbortSignal.timeout().
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            if (!response.ok) throw onHttpError(response.status);
+            return await response.json();
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
     async function loadInsightSnapshot({ includeDrafts = false, preferStatic = false } = {}) {
         // REST queries are authoritative server reads; SDK cache/WebChannel transport is bypassed.
         // No orderBy: Firestore excludes documents lacking the ordered field.
@@ -58,13 +70,10 @@
         let lastError;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                const response = await fetch(endpoint, {
+                const rows = await fetchInsightJson(endpoint, {
                     method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json', ...authorization },
-                    body: JSON.stringify({ structuredQuery: query }),
-                    signal: AbortSignal.timeout(preferStatic ? 4000 : 15000)
-                });
-                if (!response.ok) throw new Error(`Insight server returned HTTP ${response.status}`);
-                const rows = await response.json();
+                    body: JSON.stringify({ structuredQuery: query })
+                }, preferStatic ? 4000 : 15000, status => new Error(`Insight server returned HTTP ${status}`));
                 if (!Array.isArray(rows) || rows.some(row => row.error || (!row.document && !row.readTime))) {
                     throw new Error('Invalid insight server response');
                 }
@@ -79,9 +88,9 @@
         }
         if (!includeDrafts && preferStatic) {
             try {
-                const response = await fetch('data/insights.json', {cache:'no-store', signal:AbortSignal.timeout(8000)});
-                if (!response.ok) throw new Error(`Published copy returned HTTP ${response.status}`);
-                return announceSnapshot(verifiedPublishedCopy(await response.json()));
+                const copy = await fetchInsightJson('data/insights.json', { cache: 'no-store' }, 8000,
+                    status => new Error(`Published copy returned HTTP ${status}`));
+                return announceSnapshot(verifiedPublishedCopy(copy));
             } catch (copyError) { console.warn('Published report copy unavailable:', copyError.message); }
         }
         throw lastError; // A failed read must never become an empty report list.
@@ -93,13 +102,11 @@
         let lastError;
         for (let attempt = 0; attempt < 2; attempt++) {
             try {
-                const response = await fetch(endpoint, { cache: 'no-store', headers: authorization, signal: AbortSignal.timeout(15000) });
-                if (!response.ok) {
-                    const error = new Error(response.status === 404 ? '해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.' : `리포트 조회 실패 (HTTP ${response.status})`);
-                    error.permanent = response.status < 500;
-                    throw error;
-                }
-                const doc = await response.json();
+                const doc = await fetchInsightJson(endpoint, { cache: 'no-store', headers: authorization }, 15000, status => {
+                    const error = new Error(status === 404 ? '해당 리포트를 찾을 수 없습니다. 삭제 여부와 주소를 확인하세요.' : `리포트 조회 실패 (HTTP ${status})`);
+                    error.permanent = status < 500;
+                    return error;
+                });
                 if (!doc.name || !doc.fields) throw new SyntaxError('리포트 응답이 올바르지 않습니다.');
                 return { ...decodeFields(doc.fields), id: doc.name.split('/').pop(), updateTime: doc.updateTime };
             } catch (error) {
