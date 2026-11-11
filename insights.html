@@ -116,7 +116,7 @@
                 <a class="insight-admin-action" href="admin.html">새 리포트 등록 (관리자)</a>
                 <button type="button" class="insight-admin-action insight-admin-action-secondary"
                         id="insight-manage-reports" aria-controls="draft-section published-manage-section"
-                        aria-expanded="false" onclick="openReportManagement()">리포트 관리 (관리자)</button>
+                        aria-expanded="false" disabled onclick="openReportManagement()">리포트 관리 (관리자)</button>
             </div>
 
             <!-- ★ 등록 전 리포트 섹션 (관리자 로그인 후에만 표시) -->
@@ -215,16 +215,18 @@
                 let allPublished = [];
 
                 async function openReportManagement() {
+                    const manageButton = document.getElementById('insight-manage-reports');
+                    manageButton.disabled = true;
                     try {
                         await window.requireAdminAccess({ interactive: true });
                         isAdminMode = true;
                         if (window.fetchInsightsAndRender) await window.fetchInsightsAndRender();
-                        loadAdminSections();
-                        document.getElementById('insight-manage-reports').setAttribute('aria-expanded', 'true');
+                        await loadAdminSections();
+                        manageButton.setAttribute('aria-expanded', 'true');
                         const draftSection = document.getElementById('draft-section');
                         draftSection.focus({ preventScroll: true });
                         draftSection.scrollIntoView({ block: 'start' });
-                    } catch (error) { alert(error.message); }
+                    } catch (error) { alert(error.message); } finally { manageButton.disabled = false; }
                 }
 
                 function getCategoryLabel(cat) {
@@ -665,6 +667,7 @@
         };
 
         document.addEventListener('DOMContentLoaded', async function() {
+            document.getElementById('insight-manage-reports').disabled = typeof window.requireAdminAccess !== 'function';
             if (!window.loadInsightSnapshot) {
                 renderInsightCards(6);
                 return;
