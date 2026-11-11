@@ -13,7 +13,8 @@ function officialIndexes(category, today) {
   }];
   if (category === 'product-certification') return [{
     url: 'https://health.ec.europa.eu/medical-devices-sector_en',
-    path: /^\/latest-updates\/[^/]+_en$/i
+    path: /^\/latest-updates\/[^/]+_en$/i,
+    datedCards: true
   }];
   return [];
 }
@@ -44,6 +45,21 @@ function freshDate(source, today, maxDays) {
     const age = (Date.parse(today) - Date.parse(date)) / 86400000;
     return age >= 0 && age <= maxDays;
   });
+}
+
+function cardPublicationDates(html, base, path, domains) {
+  const datesByUrl = new Map();
+  for (const [card] of html.matchAll(/<article\b[^>]*\bclass=["'][^"']*\becl-card\b[^"']*["'][^>]*>[\s\S]*?<\/article>/gi)) {
+    const links = publisherLinks(card, base, path, domains);
+    const dates = [...new Set([...card.matchAll(/<time\b[^>]*\bdatetime=["'](\d{4}-\d{2}-\d{2})(?=T|["'])/gi)].map(match => match[1]))];
+    if (links.length !== 1 || dates.length !== 1) continue;
+    const [url] = links;
+    const [date] = dates;
+    const parsed = new Date(date);
+    if (!Number.isFinite(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== date) continue;
+    datesByUrl.set(url, !datesByUrl.has(url) || datesByUrl.get(url) === date ? date : null);
+  }
+  return datesByUrl;
 }
 
 async function discoverSources({category, today, existingLinks = [], search, onlyOfficial = false, fetchImpl = fetch, log = console}) {
@@ -77,8 +93,8 @@ async function discoverSources({category, today, existingLinks = [], search, onl
       }
     };
     const resolved = [];
-    if (category === 'product-certification' && !allowGrounding) {
-      // The Commission list and its attachments share a host. Avoid bursts to that publisher.
+    if (category === 'product-certification') {
+      // Grounding links, list links and attachments can all lead to the same publisher.
       for (const url of unique) resolved.push(await inspect(url));
     } else {
       resolved.push(...await Promise.all(unique.map(inspect)));
@@ -109,6 +125,16 @@ async function discoverSources({category, today, existingLinks = [], search, onl
       const links = publisherLinks(html, url, index.path, domains);
       if (!links.length) throw new Error('No article links found in the expected list format');
       indexCount++;
+      if (index.datedCards) {
+        // Use the list date only to skip stale cards. Verify eligible dates on the original page.
+        const dates = cardPublicationDates(html, url, index.path, domains);
+        const eligible = links.filter(link => {
+          const date = dates.get(link);
+          return !known.has(link) && (!date || Boolean(freshDate({ dates: [date] }, today, maxDays)));
+        });
+        if (eligible.length < links.length) log.info?.(`  공식 목록에서 이미 등록됐거나 기간이 지난 원문 ${links.length - eligible.length}건을 요청 전에 제외`);
+        return eligible.slice(0, 4);
+      }
       return links.slice(0, 4);
     } catch (error) {
       unverifiable++;

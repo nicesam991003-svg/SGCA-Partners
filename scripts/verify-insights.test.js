@@ -369,6 +369,39 @@ test('product discovery follows the official announcement and reads its same-pub
   assert.equal(verifyEvidence({sourceTitle:source.title,sourceQuote:sentence,sourcePublishedDate:source.date},source,'2026-11-10',14).attachmentUrl,attachment);
 });
 
+test('product discovery skips dated old cards and verifies a fresh article after a temporary 429', async () => {
+  const base = 'https://health.ec.europa.eu';
+  const list = base + '/medical-devices-sector_en';
+  const old = base + '/latest-updates/old-guidance_en';
+  const fresh = base + '/latest-updates/fresh-guidance_en';
+  const card = (url, date) => `<article class="ecl-card"><time datetime="${date}T12:00:00Z"></time><a href="${url}">Read</a></article>`;
+  const calls = [];
+  const result = await discoverSources({
+    category: 'product-certification', today: '2026-11-11', onlyOfficial: true, log: {warn(){}},
+    fetchImpl: async url => {
+      calls.push(url);
+      if (url === list) return new Response(card(old, '2026-09-09') + card(fresh, '2026-11-03'), {headers:{'content-type':'text/html'}});
+      assert.equal(url, fresh);
+      if (calls.length === 2) return new Response('', {status:429, headers:{'Retry-After':'1'}});
+      return new Response('<title>Official notice</title><meta property="article:published_time" content="2026-11-04"><main>' +
+        'Official content about the scope of the guidance. '.repeat(7) + '</main>', {headers:{'content-type':'text/html'}});
+    }
+  });
+  assert.deepEqual(calls, [list, fresh, fresh]);
+  assert.deepEqual(result.sources.map(({url,date}) => ({url,date})), [{url:fresh,date:'2026-11-04'}]);
+});
+
+test('product discovery reports incomplete verification when a fresh source asks for a long cooldown', async () => {
+  let requests = 0;
+  await assert.rejects(discoverSources({
+    category:'product-certification', today:'2026-11-11', onlyOfficial:true, log:{warn(){}},
+    fetchImpl:async () => ++requests === 1 ?
+      new Response('<a href="/latest-updates/guidance_en">Notice</a>', {headers:{'content-type':'text/html'}}) :
+      new Response('', {status:429, headers:{'Retry-After':'120'}})
+  }), /Discovery incomplete/);
+  assert.equal(requests, 2);
+});
+
 test('a rejected article falls back to a different verified original without bypassing translation review', async () => {
   const source={url:'https://csrc.nist.gov/News/2026/verified',title:'Verified title',date:'2026-11-04',dates:['2026-11-04'],text:'Verified publisher statement with a long exact quotation for checking.',sha256:'fixture'};
   const rejected={...source,url:'https://csrc.nist.gov/News/2026/unrelated'};

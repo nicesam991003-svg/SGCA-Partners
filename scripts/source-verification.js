@@ -68,19 +68,23 @@ function publicationDates(html) {
   return [...dates];
 }
 async function requestPublisher(url, fetchImpl, accept, redirect) {
-  const request = () => fetchImpl(url, {
-    redirect, signal: AbortSignal.timeout(20000),
-    headers: { Accept: accept, 'User-Agent': 'SGCA-SourceVerifier/1.0' }
-  });
-  const response = await request();
-  if (response.status !== 429 && response.status !== 503) return response;
-  const retryAfter = response.headers.get('retry-after');
-  const milliseconds = retryAfter == null ? 1500 : /^\d+(?:\.\d+)?$/.test(retryAfter) ?
-    Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now();
-  if (!Number.isFinite(milliseconds) || milliseconds > 8000) return response;
-  await response.body?.cancel();
-  await delay(Math.max(500, milliseconds));
-  return request();
+  const backoff = [2000, 5000];
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetchImpl(url, {
+      redirect, signal: AbortSignal.timeout(20000),
+      headers: { Accept: accept, 'User-Agent': 'SGCA-SourceVerifier/1.0' }
+    });
+    if (![429, 503].includes(response.status) || attempt === backoff.length) return response;
+
+    const retryAfter = response.headers.get('retry-after');
+    const serverDelay = retryAfter == null ? 0 : /^\d+$/.test(retryAfter) ?
+      Number(retryAfter) * 1000 : Date.parse(retryAfter) - Date.now();
+    const wait = Math.max(backoff[attempt], Number.isNaN(serverDelay) ? 0 : serverDelay);
+    // Leave this request to a future run if the publisher asks for a longer wait.
+    if (wait > 45000) return response;
+    await response.body?.cancel();
+    await delay(wait);
+  }
 }
 
 async function fetchPublisherHtml(value, domains, fetchImpl = fetch, allowGroundingRedirect = false) {
