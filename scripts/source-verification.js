@@ -183,7 +183,9 @@ async function fetchSource(value, domains, fetchImpl = fetch, shouldRead = () =>
 function verifyEvidence(report, source, today, maxAgeDays) {
   if (report.sourceTitle !== source.title) throw new Error('Source title does not match the retrieved page');
   const quote = textFromHtml(report.sourceQuote || '');
-  if (quote.length < 40 || !source.text.includes(quote)) throw new Error('Source evidence quote is absent from the retrieved publication');
+  if (quote.length < 40 || !source.text.includes(quote)) {
+    throw Object.assign(new Error('Source evidence quote is absent from the retrieved publication'), { code: 'SOURCE_QUOTE_MISMATCH' });
+  }
   if (!source.dates.includes(report.sourcePublishedDate)) throw new Error('Publication date could not be independently verified');
   const age = (Date.parse(today) - Date.parse(report.sourcePublishedDate)) / 86400000;
   if (!Number.isFinite(age) || age < 0 || age > maxAgeDays) throw new Error('Source publication is outside the requested time window');

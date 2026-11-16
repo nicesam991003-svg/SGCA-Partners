@@ -443,3 +443,47 @@ test('a rejected article falls back to a different verified original without byp
   assert.equal(report.date,source.date);
   assert.equal(report.sourceVerification.translationAccurate,true);
 });
+
+test('cybersecurity repairs a mismatched quote and still requires a source and translation review', async () => {
+  const source = {
+    url: 'https://csrc.nist.gov/News/2026/verified',
+    title: 'Call for comments',
+    date: '2026-11-04',
+    dates: ['2026-11-04'],
+    text: 'The agency invites comments on a proposed revision by December 18, 2026.',
+    sha256: 'fixture'
+  };
+  const candidate = {
+    title: '개정 제안에 대한 의견 수렴', titleEn: 'Call for comments on a proposed revision',
+    desc: '의견 제출 마감은 12월 18일입니다.', descEn: 'Comments are due December 18.',
+    fullContent: '<p>개정 제안에 대한 의견을 받습니다.</p>',
+    fullContentEn: '<p>The agency invites comments on a proposed revision.</p>'
+  };
+  for (const rejection of ['quote', 'translation']) {
+    let drafts = 0;
+    let reviews = 0;
+    const report = await generateCategoryReport('cyber-security', '2026-11-16', '', [], {
+      discover: async () => ({reason: 'publisher index', sources: [source]}),
+      ask: async (_, payload, useSearch) => {
+        assert.equal(useSearch, false);
+        const data = JSON.parse(payload);
+        if (data.report) {
+          reviews++;
+          assert.equal(data.report.sourceQuote, source.text);
+          if (rejection === 'translation' && reviews === 1) {
+            return {report: {supported: true, translationAccurate: false, issues: ['Check the Korean deadline.']}};
+          }
+          return {report: {supported: true, translationAccurate: true, issues: []}};
+        }
+        drafts++;
+        assert.equal(data.sourceText, source.text);
+        if (drafts === 2) assert.match(data.previousReview.join(' '), rejection === 'quote' ? /verbatim/ : /Korean deadline/);
+        const sourceQuote = rejection === 'quote' && drafts === 1 ? 'A paraphrase that does not appear in the publisher text.' : source.text;
+        return {report: {...candidate, sourceQuote}};
+      }
+    });
+    assert.equal(drafts, 2);
+    assert.equal(reviews, rejection === 'quote' ? 1 : 2);
+    assert.equal(report.sourceVerification.translationAccurate, true);
+  }
+});
