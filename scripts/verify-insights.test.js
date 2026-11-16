@@ -429,7 +429,7 @@ test('a rejected article falls back to a different verified original without byp
       assert.equal(useSearch,false);
       requests++;
       if (requests===1) return {report:{skip:true}};
-      if (requests===2) return {report:{title:'한글',titleEn:'English',desc:'요약',descEn:'Summary',fullContent:'<p>본문</p>',fullContentEn:'<p>Body</p>',sourceTitle:'Model paraphrase',sourcePublishedDate:'2026-11-01',sourceQuote:source.text,link:'https://example.org/fake'}};
+      if (requests===2) return {report:{title:'한글',titleEn:'English',desc:'요약',descEn:'Summary',fullContent:'<p>본문</p>',fullContentEn:'<p>Body</p>',sourceTitle:'Model paraphrase',sourcePublishedDate:'2026-11-01',sourceQuoteNumber:1,link:'https://example.org/fake'}};
       const reviewedReport = JSON.parse(payload).report;
       assert.equal(reviewedReport.link,source.url);
       assert.equal(reviewedReport.sourceTitle,source.title);
@@ -444,7 +444,7 @@ test('a rejected article falls back to a different verified original without byp
   assert.equal(report.sourceVerification.translationAccurate,true);
 });
 
-test('cybersecurity repairs a mismatched quote and still requires a source and translation review', async () => {
+test('cybersecurity uses exact numbered passages and requires a fresh review after a correction', async () => {
   const source = {
     url: 'https://csrc.nist.gov/News/2026/verified',
     title: 'Call for comments',
@@ -476,10 +476,10 @@ test('cybersecurity repairs a mismatched quote and still requires a source and t
           return {report: {supported: true, translationAccurate: true, issues: []}};
         }
         drafts++;
-        assert.equal(data.sourceText, source.text);
+        assert.deepEqual(data.sourcePassages, [{number: 1, text: source.text}]);
         if (drafts === 2) assert.match(data.previousReview.join(' '), rejection === 'quote' ? /verbatim/ : /Korean deadline/);
-        const sourceQuote = rejection === 'quote' && drafts === 1 ? 'A paraphrase that does not appear in the publisher text.' : source.text;
-        return {report: {...candidate, sourceQuote}};
+        const sourceQuoteNumber = rejection === 'quote' && drafts === 1 ? 9 : 1;
+        return {report: {...candidate, sourceQuoteNumber, sourceQuote: 'Model supplied text must not replace publisher evidence.'}};
       }
     });
     assert.equal(drafts, 2);
