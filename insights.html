@@ -113,14 +113,16 @@
 
             <!-- 관리자 버튼 영역 -->
             <div class="insight-admin-actions">
-                <a class="insight-admin-action" href="admin.html">새 리포트 등록 (관리자)</a>
-                <button type="button" class="insight-admin-action insight-admin-action-secondary"
+                <button type="button" class="insight-admin-action"
                         id="insight-manage-reports" aria-controls="draft-section published-manage-section"
                         aria-expanded="false" disabled onclick="openReportManagement()">리포트 관리 (관리자)</button>
             </div>
 
             <!-- ★ 등록 전 리포트 섹션 (관리자 로그인 후에만 표시) -->
             <div id="draft-section" tabindex="-1" style="display:none; margin-top: 48px;">
+                <div class="insight-admin-actions" style="margin:0 0 18px;">
+                    <a class="insight-admin-action" href="admin.html">새 리포트 등록</a>
+                </div>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>

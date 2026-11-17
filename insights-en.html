@@ -135,14 +135,16 @@
 
             <!-- Admin Entry Button -->
             <div class="insight-admin-actions">
-                <a class="insight-admin-action" href="admin.html">Register New Report (Admin)</a>
-                <button type="button" class="insight-admin-action insight-admin-action-secondary"
+                <button type="button" class="insight-admin-action"
                         id="insight-manage-reports" aria-controls="draft-section published-manage-section"
                         aria-expanded="false" disabled onclick="openReportManagement()">Manage Reports (Admin)</button>
             </div>
 
             <!-- ★ Draft Reports Section (visible after admin login) -->
             <div id="draft-section" tabindex="-1" style="display:none; margin-top: 48px;">
+                <div class="insight-admin-actions" style="margin:0 0 18px;">
+                    <a class="insight-admin-action" href="admin.html">Register New Report</a>
+                </div>
                 <div style="display:flex; align-items:center; gap:12px; margin-bottom:18px;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#f59e0b;"></span>
